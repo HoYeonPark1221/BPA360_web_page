@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="ko" class="no-js">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>BPA 360 — 사건 현장 안에서 혈흔을 읽다</title>
+  <meta name="description" content="BPA 360은 실제 크기로 재현한 사건 현장에서 혈흔 형태 분석(BPA)의 전 과정을 연습하는 Apple Vision Pro 앱입니다.">
+  <meta name="theme-color" content="#15110d">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="BPA 360 — 사건 현장 안에서 혈흔을 읽다">
+  <meta property="og:description" content="실제 크기의 사건 현장에서 혈흔 형태 분석을 훈련하는 visionOS 앱">
+  <meta property="og:image" content="https://hoyeonpark1221.github.io/BPA360_web_page/assets/img/og.jpg">
+  <meta property="og:url" content="https://hoyeonpark1221.github.io/BPA360_web_page/">
+
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/img/env.webp" as="image">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="logo-symbol" viewBox="0 0 100.44 94.32">
+      <path d="M76.6 80.52 62.09 80.25 16.73 6.18h13.58L76.6 80.52Z" fill="currentColor"/>
+      <path d="m98.79 31.14 1.65 11.7-94.99 8.26 6.12-12.12 87.22-7.84Z" fill="currentColor"/>
+      <path d="m62.24 14.05 3.99 13.95-57.5 65.09-3.99-12.98 57.5-66.06Z" fill="currentColor"/>
+    </symbol>
+    <symbol id="logo-bpa" viewBox="0 0 136.06 39.91">
+      <path fill="currentColor" d="M37.499 0.286133C40.1335 0.286141 42.0976 1.18747 43.4385 2.96582L43.4424 2.9707C44.8206 4.73034 45.5244 7.11299 45.5244 10.1484C45.5244 12.5445 45.0431 14.4621 44.1035 15.9229C43.171 17.3727 41.7067 18.3822 39.6797 18.9375L39.4697 18.9951V20.6035L39.7168 20.6377C41.7457 20.9141 43.3062 21.7519 44.4219 23.1436L44.6387 23.4287L44.6406 23.4316C45.7717 24.9638 46.3525 27.045 46.3525 29.7041C46.3525 32.7001 45.6482 35.1049 44.2656 36.9434C42.9189 38.7296 41.0751 39.623 38.7021 39.623H0.286133V0.286133H37.499ZM119.465 0.286133L135.628 39.623H123.731L121.543 33.5977L121.475 33.4092H104.113L104.043 33.5928L101.744 39.623H89.8447L106.044 0.286133H119.465ZM84.5986 0.286133C88.1734 0.286133 90.7471 1.38573 92.3828 3.53711L92.3838 3.53906C94.0324 5.67068 94.8818 8.95901 94.8818 13.4551C94.8818 16.4727 94.508 19.1411 93.7666 21.4639L93.7656 21.4668C93.0515 23.781 91.9371 25.5939 90.4307 26.9209C88.9379 28.1983 87.002 28.8477 84.5986 28.8477H60.2783V39.623H49.1914V0.286133H84.5986ZM11.373 29.1924H32.9102C33.4885 29.1924 33.9518 28.9298 34.2773 28.4365C34.5934 27.9574 34.7383 27.3453 34.7383 26.625C34.7382 25.9631 34.6185 25.4022 34.3496 24.9707L34.2256 24.7939C33.9047 24.3191 33.4615 24.0586 32.9102 24.0586H11.373V29.1924ZM112.314 10.6836L109.045 20.3672L107.767 23.7881L107.622 24.1748H118.109L117.97 23.791L116.729 20.3701L113.61 10.6875L113.546 10.4893H112.38L112.314 10.6836ZM60.2783 17.4473H81.4395C82.0295 17.4473 82.4922 17.1546 82.8125 16.625C83.1245 16.1091 83.2676 15.4437 83.2676 14.6523C83.2676 13.8352 83.1158 13.1652 82.7744 12.6797H82.7754C82.4588 12.1562 82.0106 11.8574 81.4395 11.8574H60.2783V17.4473ZM11.373 15.8506H32.3086C32.8868 15.8506 33.3503 15.5889 33.6758 15.0957C33.9919 14.6166 34.1367 14.0045 34.1367 13.2842C34.1367 12.5383 33.9836 11.9213 33.6377 11.4727H33.6387C33.3167 10.9847 32.8679 10.7178 32.3086 10.7178H11.373V15.8506Z"/>
+    </symbol>
+  </svg>
+
+  <div class="environment" aria-hidden="true"></div>
+  <a class="skip" href="#top">본문으로 건너뛰기</a>
+
+  <!-- 탭 오너먼트 -->
+  <nav aria-label="주요 메뉴">
+    <ul class="tabs glass">
+      <li><a class="tab hover" href="#top" aria-current="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10.5 12 4l8.5 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-4v-6h-6v6H5A1.5 1.5 0 0 1 3.5 19v-8.5Z"/></svg>
+        <span class="tab__label">홈</span></a></li>
+      <li><a class="tab hover" href="#features">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5s6 6.4 6 10.8a6 6 0 0 1-12 0C6 9.9 12 3.5 12 3.5Z"/></svg>
+        <span class="tab__label">훈련 단계</span></a></li>
+      <li><a class="tab hover" href="#tools">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 16.5 16.5 3 21 7.5 7.5 21 3 16.5Z"/><path d="M13 6.5l1.8 1.8M10 9.5l1.8 1.8M7 12.5l1.8 1.8"/></svg>
+        <span class="tab__label">도구</span></a></li>
+      <li><a class="tab hover" href="team.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8.5" r="3.2"/><path d="M3 19.5c.6-3.2 3-5 6-5s5.4 1.8 6 5"/><circle cx="16.8" cy="9.5" r="2.5"/><path d="M16.5 14.6c2.3.2 4 1.7 4.5 4.4"/></svg>
+        <span class="tab__label">팀</span></a></li>
+      <li><a class="tab hover" href="https://github.com/DeveloperAcademy-POSTECH/2026-C6-M8-VoV">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8.5 7-5 5 5 5M15.5 7l5 5-5 5M13.5 4.5l-3 15"/></svg>
+        <span class="tab__label">GitHub</span></a></li>
+    </ul>
+  </nav>
+
+  <main class="stage">
+    <!-- 히어로 창 -->
+    <div class="window-group" id="top">
+      <section class="window glass hero intro" data-tilt="1" data-lift="1">
+        <span class="logo">
+          <svg class="logo__symbol" viewBox="0 0 100.44 94.32" aria-hidden="true"><use href="#logo-symbol"/></svg>
+          <span class="logo__word">
+            <svg class="logo__bpa" viewBox="0 0 136.06 39.91" aria-hidden="true"><use href="#logo-bpa"/></svg>
+            <span class="logo__num">360</span>
+          </span>
+        </span>
+        <p class="hero__sub">BloodStain Pattern Analysis</p>
+        <h1 class="display">사건 현장 안에서<br>혈흔을 읽다.</h1>
+        <p class="lead">BPA 360은 실제 크기로 재현한 사건 현장을 걸으며 혈흔을 관찰하고, 묶고, 재고, 추론하는 혈흔 형태 분석(BPA)의 전 과정을 연습하는 visionOS 앱입니다.</p>
+        <div class="actions">
+          <a class="btn btn--primary hover" href="#features">훈련 과정 보기</a>
+          <a class="btn hover" href="team.html">만든 사람들</a>
+        </div>
+        <figure class="portal">
+          <img src="assets/img/hero-scene.webp" width="2800" height="1172" alt="소파와 스탠드 조명이 있는 거실 벽과 바닥에 혈흔이 흩어져 있고, 노란 증거 표지 A부터 E가 분석 구역을 표시한 가상 현장" fetchpriority="high">
+        </figure>
+      </section>
+      <ol class="flow ornament glass intro" style="--i: 2" aria-label="훈련 흐름">
+        <li><span>1</span>공간 진입</li>
+        <li><span>2</span>현장 관찰</li>
+        <li><span>3</span>클러스터링 · 형태 분류</li>
+        <li><span>4</span>방향성 · 움직임 판단</li>
+        <li><span>5</span>행위 가설</li>
+        <li><span>6</span>예시 답안 비교</li>
+      </ol>
+      <div class="window-bar intro" style="--i: 3" aria-hidden="true"><span class="window-bar__close"></span><span class="window-bar__grab"></span></div>
+    </div>
+
+    <!-- 문제 제기 창 -->
+    <section class="window glass why reveal" aria-labelledby="why-title">
+      <p class="chip chip--plain">왜 공간이어야 할까요</p>
+      <h2 class="headline" id="why-title">혈흔은 공간에 남는데, 연습은 늘 평면 위에서 했습니다.</h2>
+      <div class="why__grid">
+        <article class="why__card hover">
+          <span class="symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5.5" width="18" height="13.5" rx="2.5"/><circle cx="12" cy="12.2" r="3.2"/><path d="M8 5.5l1.2-2h5.6l1.2 2"/></svg></span>
+          <h3>사진은 거리를 지웁니다</h3>
+          <p>벽과 바닥, 가구 사이에 흩어진 혈흔의 위치와 거리는 사진 몇 장으로는 온전히 전해지지 않습니다.</p>
+        </article>
+        <article class="why__card hover">
+          <span class="symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></span>
+          <h3>현장은 다시 열리지 않습니다</h3>
+          <p>실제 현장은 오래 보존되지 않아, 같은 장면을 처음부터 다시 분석해 볼 기회가 드뭅니다.</p>
+        </article>
+        <article class="why__card hover">
+          <span class="symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 16.5 16.5 3 21 7.5 7.5 21 3 16.5Z"/><path d="M13 6.5l1.8 1.8M10 9.5l1.8 1.8M7 12.5l1.8 1.8"/></svg></span>
+          <h3>측정은 손이 기억합니다</h3>
+          <p>장축과 단축을 재고 줄을 이어 발혈부위를 찾는 일은 직접 해 봐야 감각이 생깁니다.</p>
+        </article>
+      </div>
+      <p class="why__answer">그래서 BPA 360은 현장을 통째로 눈앞에 펼쳐 놓습니다. <span>걸어 들어가고, 손을 뻗어 재고, 몇 번이고 다시 시작할 수 있게.</span></p>
+    </section>
+
+    <!-- 훈련 단계 -->
+    <div class="stack" id="features">
+    <div class="window-group reveal">
+      <article class="window glass feature">
+        <div class="feature__text">
+          <p class="chip"><b>02</b>현장 관찰</p>
+          <h2 class="title">먼저, 현장을 천천히 둘러봅니다.</h2>
+          <p class="body">거실 한 칸이 실제 크기로 펼쳐집니다. 노란 증거 표지가 분석할 구역을 알려주고, 단계별 안내가 어디부터 볼지 짚어 줍니다.</p>
+          <ul class="points">
+            <li>A부터 E까지 구역별로 혈흔을 살펴보기</li>
+            <li>단계마다 할 일을 알려주는 안내 카드</li>
+          </ul>
+        </div>
+        <figure class="shot">
+          <img src="assets/img/observe.webp" width="1920" height="1080" loading="lazy" alt="A 구역 벽면이 밝게 강조되고 아래에 현장 분석 안내 카드가 떠 있는 화면">
+        </figure>
+      </article>
+      <div class="window-bar" aria-hidden="true"><span class="window-bar__close"></span><span class="window-bar__grab"></span></div>
+    </div>
+
+    <div class="window-group reveal" data-gallery>
+      <article class="window glass feature feature--flip">
+        <div class="feature__text">
+          <p class="chip"><b>03</b>클러스터링 · 형태 분류</p>
+          <h2 class="title">표시하고, 묶고, 유형을 정합니다.</h2>
+          <p class="body">방향 스티커를 혈흔 위에 직접 붙여 방향을 남기고, 핀치로 영역을 끌어 비슷한 혈흔을 하나의 그룹으로 묶습니다. 묶은 그룹은 분류 기준에 따라 유형을 판단합니다.</p>
+          <ul class="points">
+            <li>방향 · 번호 · 자 스티커를 공간에 부착</li>
+            <li>영역을 그려 그룹으로 묶기</li>
+            <li>선형비산혈흔, 비선형비산혈흔 등 유형 분류</li>
+          </ul>
+          <p class="caption" aria-live="polite"></p>
+        </div>
+        <figure class="shot">
+          <div class="frames" role="tabpanel">
+            <img class="is-active" src="assets/img/sticker.webp" width="1920" height="1080" loading="lazy" alt="손으로 방향 스티커를 집어 벽의 혈흔 위에 붙이는 화면">
+            <img src="assets/img/group.webp" width="1920" height="1080" loading="lazy" alt="핀치로 점선 사각형 영역을 끌어 파란 스티커가 붙은 혈흔들을 B 그룹으로 묶는 화면">
+            <img src="assets/img/classify.webp" width="1920" height="1080" loading="lazy" alt="혈흔 유형 분류 패널에 선형비산혈흔, 비선형비산혈흔 등 선택지가 나열된 화면">
+          </div>
+        </figure>
+      </article>
+      <div class="ornament glass">
+        <div class="segmented" role="tablist" aria-label="클러스터링 화면 고르기">
+          <span class="segmented__thumb" aria-hidden="true"></span>
+          <button class="hover" type="button" role="tab" aria-selected="true" data-caption="스티커를 집어 혈흔 위에 바로 붙입니다.">스티커 붙이기</button>
+          <button class="hover" type="button" role="tab" aria-selected="false" data-caption="핀치를 유지한 채 영역을 끌어 그룹을 만듭니다.">그룹으로 묶기</button>
+          <button class="hover" type="button" role="tab" aria-selected="false" data-caption="그룹마다 혈흔의 형태를 골라 분류합니다.">형태 분류</button>
+        </div>
+      </div>
+      <div class="window-bar" aria-hidden="true"><span class="window-bar__close"></span><span class="window-bar__grab"></span></div>
+    </div>
+
+    <div class="window-group reveal" data-gallery>
+      <article class="window glass feature">
+        <div class="feature__text">
+          <p class="chip"><b>04</b>방향성 · 움직임 판단</p>
+          <h2 class="title">선을 이어, 피가 시작된 곳을 찾습니다.</h2>
+          <p class="body">대표 혈흔의 장축과 단축을 손으로 재면 충돌각이 나옵니다. 줄 연결법으로 혈흔마다 선을 이으면 평면집중부위가, 각도를 더하면 공간발혈부위가 드러납니다.</p>
+          <ul class="points">
+            <li>타원 손잡이를 끌어 장축 · 단축 측정</li>
+            <li>공간에 줄을 걸어 평면집중부위 찾기</li>
+            <li>충돌각으로 공간발혈부위 확정</li>
+          </ul>
+          <p class="caption" aria-live="polite"></p>
+        </div>
+        <figure class="shot">
+          <div class="frames" role="tabpanel">
+            <img class="is-active" src="assets/img/measure.webp" width="1920" height="1080" loading="lazy" alt="확대한 대표 혈흔 위에 타원과 손잡이가 겹쳐 있고 장축 · 단축 입력 칸이 있는 측정 패널">
+            <img src="assets/img/stringing.webp" width="1920" height="1080" loading="lazy" alt="손으로 흰 줄을 당겨 여러 혈흔에서 이어진 선이 한 점으로 모이는 줄 연결법 화면">
+            <img src="assets/img/origin.webp" width="1920" height="1080" loading="lazy" alt="여러 줄이 모인 지점에 빨간 공간발혈부위 표시와 줄 연결법 완료 카드가 뜬 화면">
+          </div>
+        </figure>
+      </article>
+      <div class="ornament glass">
+        <div class="segmented" role="tablist" aria-label="방향성 판단 화면 고르기">
+          <span class="segmented__thumb" aria-hidden="true"></span>
+          <button class="hover" type="button" role="tab" aria-selected="true" data-caption="타원 손잡이를 끌어 혈흔의 장축과 단축을 맞춥니다.">장단축 측정</button>
+          <button class="hover" type="button" role="tab" aria-selected="false" data-caption="혈흔마다 줄을 이어 선이 모이는 곳을 찾습니다.">줄 연결법</button>
+          <button class="hover" type="button" role="tab" aria-selected="false" data-caption="선이 모인 곳 위로 피가 시작된 높이를 확정합니다.">공간발혈부위</button>
+        </div>
+      </div>
+      <div class="window-bar" aria-hidden="true"><span class="window-bar__close"></span><span class="window-bar__grab"></span></div>
+    </div>
+
+    <div class="pair">
+      <article class="window glass reveal">
+        <p class="chip"><b>05</b>행위 가설</p>
+        <h2 class="title">무슨 일이 있었는지, 근거로 말합니다.</h2>
+        <p class="body">관찰하고 측정한 혈흔을 근거로 현장에서 어떤 움직임이 있었는지 가설을 세웁니다.</p>
+      </article>
+      <article class="window glass reveal">
+        <p class="chip"><b>06</b>예시 답안 비교</p>
+        <h2 class="title">내 가설을 예시 답안과 나란히.</h2>
+        <p class="body">세운 가설을 예시 답안과 비교하며 놓친 근거와 다르게 본 지점을 확인합니다.</p>
+      </article>
+    </div>
+    </div>
+
+    <!-- 도구 -->
+    <section class="tools" id="tools" aria-labelledby="tools-title">
+      <div class="section-head reveal">
+        <p class="chip chip--plain">분석을 돕는 도구</p>
+        <h2 class="headline" id="tools-title">필요한 도구는 언제나 손 닿는 곳에.</h2>
+        <p class="lead">패널 하나에 단계 이동, 측정 도구, 메모와 캡처를 모았습니다. 현장에서 눈을 떼지 않고 다음 일로 넘어갑니다.</p>
+      </div>
+      <div class="bento">
+        <article class="tile tile--wide glass hover reveal" data-tilt="2" data-lift="1.01">
+          <div class="tile__text">
+            <h3>컨트롤 패널</h3>
+            <p>지금 단계와 다음 단계, 측정 · 메모 · 캡처 도구를 한 패널에서. 손가락을 모으는 핀치 한 번이면 됩니다.</p>
+          </div>
+          <img src="assets/img/hero-panel.webp" width="2400" height="1286" loading="lazy" alt="BPA 360 로고 아래 step 1 현장 관찰 카드와 도구 버튼이 모인 유리 질감의 컨트롤 패널, 오른쪽에서 손이 핀치하는 모습">
+        </article>
+        <article class="tile glass hover reveal" data-tilt="5">
+          <img src="assets/img/pen.webp" width="1920" height="1080" loading="lazy" alt="손가락 끝으로 벽에 점선 곡선을 그리고 옆에 펜 색상 팔레트가 떠 있는 화면">
+          <div class="tile__text">
+            <h3>방향 펜</h3>
+            <p>공간에 직접 선을 그어 혈흔이 흐른 방향을 표시합니다.</p>
+          </div>
+        </article>
+        <article class="tile glass hover reveal" data-tilt="5">
+          <img src="assets/img/memo.webp" width="1920" height="1080" loading="lazy" alt="혈흔이 흩어진 벽에 관찰 내용을 적은 흰 메모지가 붙어 있는 화면">
+          <div class="tile__text">
+            <h3>메모</h3>
+            <p>떠오른 생각을 메모지에 적어 현장 벽에 그대로 붙여 둡니다.</p>
+          </div>
+        </article>
+        <article class="tile glass hover reveal" data-tilt="5">
+          <img src="assets/img/capture.webp" width="1920" height="1080" loading="lazy" alt="핀치를 유지한 채 점선 영역을 조절해 벽의 혈흔을 캡처하는 화면">
+          <div class="tile__text">
+            <h3>전체 캡처</h3>
+            <p>보고 있는 장면을 영역째 잡아 사진으로 남깁니다.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- 마무리 창 -->
+    <div class="window-group reveal">
+      <section class="window glass cta" aria-labelledby="cta-title">
+        <span class="logo" aria-hidden="true">
+          <svg class="logo__symbol" viewBox="0 0 100.44 94.32"><use href="#logo-symbol"/></svg>
+          <span class="logo__word">
+            <svg class="logo__bpa" viewBox="0 0 136.06 39.91"><use href="#logo-bpa"/></svg>
+            <span class="logo__num">360</span>
+          </span>
+        </span>
+        <h2 class="headline" id="cta-title">현장은 준비되어 있습니다.</h2>
+        <p class="lead">Apple Vision Pro · visionOS</p>
+        <div class="actions">
+          <a class="btn btn--primary hover" href="https://github.com/DeveloperAcademy-POSTECH/2026-C6-M8-VoV">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.39-5.26 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg>
+            GitHub에서 보기
+          </a>
+          <a class="btn hover" href="team.html">Team VoV</a>
+        </div>
+      </section>
+      <div class="window-bar" aria-hidden="true"><span class="window-bar__close"></span><span class="window-bar__grab"></span></div>
+    </div>
+
+    <p class="footnote">BPA 360 · BloodStain Pattern Analysis — Team VoV, Apple Developer Academy @ POSTECH · © 2026</p>
+  </main>
+
+  <script src="assets/js/main.js" defer></script>
+</body>
+</html>

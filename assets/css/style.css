@@ -1,0 +1,1165 @@
+/* BPA 360 — 소개 페이지 (visionOS 스타일)
+   방(환경) 앞에 유리 창이 떠 있고, 탭과 도구는 창 가장자리에 붙은 오너먼트로 둔다. */
+
+:root {
+  color-scheme: dark;
+
+  /* 유리 위 글자는 흰색의 투명도로 위계를 만든다 */
+  --label: rgba(255, 255, 255, 0.96);
+  --label-2: rgba(255, 255, 255, 0.64);
+  --label-3: rgba(255, 255, 255, 0.42);
+
+  --glass-top: rgba(255, 255, 255, 0.17);
+  --glass-bottom: rgba(255, 255, 255, 0.07);
+  --platter: rgba(255, 255, 255, 0.1);
+  --platter-hover: rgba(255, 255, 255, 0.18);
+  --recessed: rgba(0, 0, 0, 0.2);
+  --rim: rgba(255, 255, 255, 0.12);
+
+  --marker: #ffd60a;
+  --marker-ink: #1a1400;
+  --blood: #d6453a;
+
+  --stage: 1080px;
+  --gutter: clamp(16px, 4vw, 32px);
+  --rail: 0px;
+
+  /* 창 모서리와 안쪽 모서리는 같은 중심을 공유한다 (안쪽 = 바깥 - 여백) */
+  --r-window: 46px;
+  --pad-window: 28px;
+  --r-inner: calc(var(--r-window) - var(--pad-window) + 4px);
+
+  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+    "Apple SD Gothic Neo", "Pretendard Variable", Pretendard, system-ui,
+    "Noto Sans KR", sans-serif;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --rail: 104px;
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    --r-window: 34px;
+    --pad-window: 18px;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #15110d;
+  color: var(--label);
+  font: 400 1.0625rem/1.6 var(--font);
+  letter-spacing: -0.01em;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.9);
+  outline-offset: 3px;
+}
+
+.skip {
+  position: absolute;
+  left: -999px;
+}
+
+.skip:focus {
+  left: 16px;
+  top: 16px;
+  z-index: 100;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #fff;
+  color: #000;
+}
+
+/* ---------- 환경: 창 뒤에 보이는 방 ---------- */
+
+.environment {
+  position: fixed;
+  inset: -3%;
+  z-index: -1;
+  background: #15110d url("../img/env.webp") center / cover no-repeat;
+  transform: translate3d(var(--px, 0), var(--py, 0), 0);
+  will-change: transform;
+}
+
+.environment::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(80% 60% at 50% 40%, transparent, rgba(0, 0, 0, 0.35)),
+    rgba(10, 8, 6, 0.22);
+}
+
+/* ---------- 유리 ---------- */
+
+.glass {
+  position: relative;
+  background: linear-gradient(180deg, var(--glass-top), var(--glass-bottom));
+  backdrop-filter: blur(44px) saturate(150%);
+  -webkit-backdrop-filter: blur(44px) saturate(150%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 30px 70px -20px rgba(0, 0, 0, 0.45);
+}
+
+/* 빛이 위 왼쪽 모서리에 맺히는 테두리 */
+.glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1.2px;
+  border-radius: inherit;
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.55),
+    rgba(255, 255, 255, 0.08) 30%,
+    rgba(255, 255, 255, 0.03) 65%,
+    rgba(255, 255, 255, 0.22)
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ---------- 시선(포인터)이 닿은 곳을 비추는 하이라이트 ---------- */
+
+.hover {
+  position: relative;
+  isolation: isolate;
+}
+
+.hover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(
+    circle at var(--mx, 50%) var(--my, 50%),
+    rgba(255, 255, 255, 0.22),
+    transparent 62%
+  );
+  opacity: 0;
+  transition: opacity 240ms ease;
+  pointer-events: none;
+}
+
+@media (hover: hover) {
+  .hover:hover::after {
+    opacity: 1;
+  }
+}
+
+/* 기울이는 카드는 JS가 --rx, --ry, --s를 스프링으로 움직인다 */
+[data-tilt] {
+  transform: perspective(1100px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(var(--s, 1));
+  will-change: transform;
+}
+
+/* ---------- 탭 오너먼트 ---------- */
+
+.tabs {
+  position: fixed;
+  z-index: 40;
+  left: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 8px;
+  border-radius: 999px;
+  list-style: none;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  height: 48px;
+  min-width: 48px;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: var(--label-2);
+  transition: background-color 200ms ease, color 200ms ease;
+}
+
+.tab svg {
+  flex: none;
+  width: 24px;
+  height: 24px;
+}
+
+.tab__label {
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition:
+    max-width 420ms var(--ease-out),
+    opacity 200ms ease,
+    margin 420ms var(--ease-out);
+}
+
+/* 탭 바를 바라보면 이름이 펼쳐진다 */
+.tabs:hover .tab__label,
+.tabs:focus-within .tab__label {
+  max-width: 7em;
+  margin-left: 12px;
+  margin-right: 6px;
+  opacity: 1;
+}
+
+.tab:hover {
+  color: var(--label);
+}
+
+.tab[aria-current] {
+  background: rgba(255, 255, 255, 0.24);
+  color: #fff;
+}
+
+@media (max-width: 767px) {
+  .tabs {
+    left: 50%;
+    top: auto;
+    bottom: max(14px, env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    flex-direction: row;
+    gap: 2px;
+    padding: 6px;
+  }
+
+  .tab {
+    flex-direction: column;
+    justify-content: center;
+    height: 54px;
+    min-width: 62px;
+    padding: 0 8px;
+    gap: 2px;
+  }
+
+  .tab svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .tab__label,
+  .tabs:hover .tab__label,
+  .tabs:focus-within .tab__label {
+    max-width: none;
+    margin: 0;
+    opacity: 1;
+    font-size: 0.6875rem;
+  }
+}
+
+/* ---------- 무대: 창이 놓이는 세로 열 ---------- */
+
+.stage,
+.stack {
+  display: grid;
+  gap: clamp(64px, 9vw, 112px);
+}
+
+.stage {
+  width: min(var(--stage), 100% - var(--gutter) * 2 - var(--rail) * 2);
+  margin-inline: auto;
+  padding: clamp(48px, 8vw, 96px) 0 clamp(120px, 14vw, 180px);
+}
+
+@media (max-width: 767px) {
+  .stage {
+    padding-bottom: 140px;
+  }
+}
+
+.window-group {
+  display: grid;
+  justify-items: center;
+}
+
+.window {
+  width: 100%;
+  padding: var(--pad-window);
+  border-radius: var(--r-window);
+}
+
+/* 창 아래의 닫기 점과 이동 막대 */
+.window-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.window-bar span {
+  display: block;
+  background: rgba(255, 255, 255, 0.34);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: background-color 200ms ease, transform 300ms var(--ease-out);
+}
+
+.window-bar__close {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+}
+
+.window-bar__grab {
+  width: 128px;
+  height: 7px;
+  border-radius: 999px;
+}
+
+.window-group:hover .window-bar span {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.window-group:hover .window-bar__grab {
+  transform: scaleX(1.06);
+}
+
+/* 창 아래 가장자리에 반쯤 걸치는 도구 오너먼트 */
+.ornament {
+  position: relative;
+  z-index: 2;
+  margin-top: -32px;
+  max-width: calc(100% - 24px);
+  padding: 8px;
+  border-radius: 999px;
+}
+
+.ornament + .window-bar {
+  margin-top: 14px;
+}
+
+/* 오너먼트가 걸치는 창은 아래 여백을 늘려 사진을 가리지 않게 한다 */
+.window:has(+ .ornament) {
+  padding-bottom: calc(var(--pad-window) + 30px);
+}
+
+/* ---------- 타이포 ---------- */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 6px;
+  border-radius: 999px;
+  background: var(--platter);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--label-2);
+}
+
+.chip--plain {
+  padding-left: 14px;
+}
+
+.chip b {
+  display: grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding-inline: 6px;
+  border-radius: 999px;
+  background: var(--marker);
+  color: var(--marker-ink);
+  font-size: 0.75rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.display {
+  margin: 0;
+  font-size: clamp(2.5rem, 6.6vw, 4.9rem);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+.headline {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 2.9rem);
+  font-weight: 700;
+  line-height: 1.16;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(1.4rem, 2.5vw, 1.9rem);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+.lead {
+  margin: 0;
+  font-size: clamp(1.05rem, 1.6vw, 1.25rem);
+  line-height: 1.6;
+  color: var(--label-2);
+  text-wrap: pretty;
+}
+
+.body {
+  margin: 0;
+  color: var(--label-2);
+  text-wrap: pretty;
+}
+
+/* ---------- 버튼 ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 24px;
+  border-radius: 999px;
+  background: var(--platter);
+  color: var(--label);
+  font-size: 0.975rem;
+  font-weight: 600;
+  transition:
+    transform 260ms var(--ease-out),
+    background-color 200ms ease;
+}
+
+@media (hover: hover) {
+  .btn:hover {
+    background: var(--platter-hover);
+    transform: scale(1.04);
+  }
+}
+
+.btn:active {
+  transform: scale(0.97);
+  transition-duration: 100ms;
+}
+
+.btn--primary {
+  background: rgba(255, 255, 255, 0.92);
+  color: #111;
+}
+
+@media (hover: hover) {
+  .btn--primary:hover {
+    background: #fff;
+  }
+}
+
+.btn--primary.hover::after {
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, 0.9), transparent 60%);
+}
+
+.btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* ---------- 로고 ---------- */
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42em;
+  line-height: 1;
+}
+
+.logo__symbol {
+  width: 1.9em;
+  height: auto;
+}
+
+.logo__word {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.16em;
+}
+
+.logo__bpa {
+  height: 0.82em;
+  width: auto;
+}
+
+.logo__num {
+  font-weight: 600;
+  font-size: 1.08em;
+  letter-spacing: -0.03em;
+}
+
+/* ---------- 히어로 창 ---------- */
+
+.hero {
+  text-align: center;
+  padding-top: clamp(36px, 6vw, 64px);
+}
+
+.hero .logo {
+  font-size: clamp(1.3rem, 2.6vw, 1.7rem);
+}
+
+.hero__sub {
+  margin: 8px 0 28px;
+  font-size: 0.8125rem;
+  color: var(--label-3);
+}
+
+.hero .lead {
+  max-width: 36rem;
+  margin: 22px auto 0;
+}
+
+.hero .actions {
+  margin-top: 32px;
+}
+
+.portal {
+  position: relative;
+  margin: clamp(36px, 5vw, 56px) 0 0;
+  border-radius: var(--r-inner);
+  overflow: hidden;
+  box-shadow: 0 0 0 1px var(--rim);
+}
+
+.portal img {
+  width: 100%;
+  aspect-ratio: 2800 / 1172;
+  object-fit: cover;
+  transition: transform 1.2s var(--ease-out);
+}
+
+@media (hover: hover) {
+  .portal:hover img {
+    transform: scale(1.025);
+  }
+}
+
+/* 흐름 오너먼트 */
+.flow {
+  display: flex;
+  gap: 4px;
+  margin: 0;
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.flow::-webkit-scrollbar {
+  display: none;
+}
+
+.flow li {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px 8px 8px;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--label-2);
+  white-space: nowrap;
+}
+
+.flow li span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--platter);
+  color: var(--label);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* ---------- 문제 제기 창 ---------- */
+
+.why {
+  padding: clamp(28px, 5vw, 56px);
+}
+
+.why .chip {
+  margin-bottom: 18px;
+}
+
+.why .headline {
+  max-width: 19ch;
+}
+
+.why__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: clamp(32px, 5vw, 48px);
+}
+
+@media (max-width: 760px) {
+  .why__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.why__card {
+  padding: 24px 24px 26px;
+  border-radius: var(--r-inner);
+  background: var(--recessed);
+}
+
+.symbol {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 20px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+.symbol svg {
+  width: 26px;
+  height: 26px;
+}
+
+.why__card h3 {
+  margin: 0 0 8px;
+  font-size: 1.12rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.why__card p {
+  margin: 0;
+  color: var(--label-2);
+  font-size: 0.95rem;
+}
+
+.why__answer {
+  margin: clamp(32px, 5vw, 48px) 0 0;
+  font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+.why__answer span {
+  color: var(--label-3);
+}
+
+/* ---------- 훈련 단계 창 ---------- */
+
+.feature {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  align-items: center;
+  gap: clamp(24px, 4vw, 48px);
+  padding-block: clamp(28px, 4vw, 40px);
+}
+
+.feature--flip .feature__text {
+  order: 2;
+}
+
+@media (max-width: 860px) {
+  .feature {
+    grid-template-columns: 1fr;
+  }
+
+  .feature--flip .feature__text {
+    order: 0;
+  }
+}
+
+.feature__text {
+  padding-inline: clamp(0px, 1.5vw, 16px);
+}
+
+.feature .chip {
+  margin-bottom: 18px;
+}
+
+.feature .body {
+  margin-top: 14px;
+}
+
+.points {
+  display: grid;
+  gap: 8px;
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.95rem;
+  color: var(--label-2);
+}
+
+.points li {
+  position: relative;
+  padding-left: 22px;
+}
+
+.points li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0.62em;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--blood);
+  box-shadow: 0 0 0 3px rgba(214, 69, 58, 0.25);
+}
+
+.shot {
+  margin: 0;
+  border-radius: var(--r-inner);
+  overflow: hidden;
+  background: var(--recessed);
+  box-shadow: 0 0 0 1px var(--rim);
+}
+
+.shot img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.caption {
+  margin: 16px 0 0;
+  min-height: 1.6em;
+  font-size: 0.875rem;
+  color: var(--label-3);
+}
+
+/* 사진 전환 */
+.frames {
+  display: grid;
+}
+
+.frames > img {
+  grid-area: 1 / 1;
+  opacity: 0;
+  transform: scale(1.015);
+  transition:
+    opacity 420ms ease,
+    transform 700ms var(--ease-out);
+}
+
+.frames > img.is-active {
+  opacity: 1;
+  transform: none;
+}
+
+.segmented {
+  position: relative;
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.segmented::-webkit-scrollbar {
+  display: none;
+}
+
+.segmented__thumb {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--w, 0);
+  transform: translateX(var(--x, 0));
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.26);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transition:
+    transform 380ms var(--ease-out),
+    width 380ms var(--ease-out);
+}
+
+.segmented button {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--label-2);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 200ms ease, transform 100ms ease-out;
+}
+
+.segmented button:active {
+  transform: scale(0.96);
+}
+
+.segmented button[aria-selected="true"] {
+  color: #fff;
+}
+
+/* ---------- 가설 · 비교 ---------- */
+
+.pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 760px) {
+  .pair {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pair .window {
+  padding: clamp(28px, 4vw, 40px);
+}
+
+.pair .chip {
+  margin-bottom: 18px;
+}
+
+.pair .body {
+  margin-top: 12px;
+}
+
+/* ---------- 도구 ---------- */
+
+.section-head {
+  max-width: 40rem;
+  padding: 0 4px;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.5);
+}
+
+.section-head .lead {
+  margin-top: 16px;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.section-head .chip {
+  margin-bottom: 16px;
+  text-shadow: none;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.tools {
+  display: grid;
+  gap: 24px;
+}
+
+.bento {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 900px) {
+  .bento {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  padding: 14px;
+  border-radius: 38px;
+}
+
+.tile img {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  border-radius: 26px;
+}
+
+.tile--wide {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
+  align-items: center;
+  border-radius: var(--r-window);
+}
+
+.tile--wide img {
+  aspect-ratio: 2400 / 1286;
+  border-radius: calc(var(--r-window) - 14px);
+}
+
+@media (max-width: 900px) {
+  .tile--wide {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tile__text {
+  padding: 18px 12px 10px;
+}
+
+.tile--wide .tile__text {
+  padding: clamp(18px, 3vw, 36px);
+}
+
+.tile__text h3 {
+  margin: 0 0 6px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.tile--wide .tile__text h3 {
+  font-size: clamp(1.35rem, 2.3vw, 1.7rem);
+}
+
+.tile__text p {
+  margin: 0;
+  color: var(--label-2);
+  font-size: 0.95rem;
+}
+
+/* ---------- 마무리 창 ---------- */
+
+.cta {
+  text-align: center;
+  padding: clamp(40px, 7vw, 80px) var(--pad-window);
+}
+
+.cta .logo {
+  font-size: clamp(1.8rem, 4.4vw, 2.6rem);
+  margin-bottom: 32px;
+}
+
+.cta .lead {
+  margin: 14px auto 0;
+}
+
+.cta .actions {
+  margin-top: 30px;
+}
+
+.footnote {
+  margin: 0;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.55);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6);
+}
+
+.footnote a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(255, 255, 255, 0.3);
+}
+
+/* ---------- 팀 ---------- */
+
+.team-head {
+  text-align: center;
+  padding: clamp(40px, 7vw, 72px) var(--pad-window);
+}
+
+.team-head .chip {
+  margin-bottom: 20px;
+}
+
+.team-head .lead {
+  max-width: 32rem;
+  margin: 18px auto 0;
+}
+
+.team {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 24px;
+}
+
+.member {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 26px 26px;
+  border-radius: 40px;
+  text-align: center;
+}
+
+.member__avatar {
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--platter);
+  box-shadow:
+    0 0 0 5px rgba(255, 255, 255, 0.14),
+    0 18px 36px rgba(0, 0, 0, 0.35);
+}
+
+.member__name {
+  margin: 22px 0 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.member__role {
+  margin: 10px 0 0;
+}
+
+.member__desc {
+  flex: 1;
+  margin: 16px 0 0;
+  color: var(--label-2);
+  font-size: 0.95rem;
+}
+
+.member .btn {
+  margin-top: 22px;
+  min-height: 42px;
+  font-size: 0.9rem;
+}
+
+/* ---------- 창이 떠오르는 등장 ---------- */
+
+/* transform은 기울기에 쓰므로 등장은 translate·scale로만 움직인다 */
+.reveal {
+  opacity: 0;
+  translate: 0 28px;
+  scale: 0.96;
+  transition:
+    opacity 700ms ease,
+    translate 900ms var(--ease-out),
+    scale 900ms var(--ease-out);
+}
+
+.reveal.is-in {
+  opacity: 1;
+  translate: none;
+  scale: none;
+}
+
+.no-js .reveal {
+  opacity: 1;
+  translate: none;
+  scale: none;
+}
+
+.intro {
+  animation: intro 1s var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+
+@keyframes intro {
+  from {
+    opacity: 0;
+    translate: 0 20px;
+    scale: 0.97;
+  }
+}
+
+/* ---------- 접근성 설정 ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .reveal,
+  .reveal.is-in {
+    translate: none;
+    scale: none;
+    transition: opacity 200ms ease;
+  }
+
+  .intro {
+    animation: none;
+  }
+
+  .frames > img,
+  .portal img {
+    transform: none !important;
+  }
+
+  .segmented__thumb,
+  .tab__label {
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    background: rgb(52, 47, 43);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --label-2: rgba(255, 255, 255, 0.86);
+    --label-3: rgba(255, 255, 255, 0.7);
+    --rim: rgba(255, 255, 255, 0.4);
+  }
+
+  .glass {
+    background: rgba(40, 36, 33, 0.92);
+  }
+}
