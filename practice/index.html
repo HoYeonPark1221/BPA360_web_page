@@ -352,7 +352,7 @@ button:disabled { opacity: 0.55; cursor: progress; }
     <div class="cam-status"><span class="dot" id="camDot"></span><span id="camText">카메라 꺼짐</span></div>
     <button id="modeBtn" class="ghost small" type="button">마우스로 바꾸기</button>
   </div>
-  <p class="keys"><kbd>←</kbd> <kbd>→</kbd> 단계 · <kbd>R</kbd> 다시 · <kbd>Esc</kbd> 처음<br><kbd>[</kbd> <kbd>]</kbd> 핀치 민감도 <span id="pinchLevel"></span></p>
+  <p class="keys"><kbd>←</kbd> <kbd>→</kbd> 단계 · <kbd>R</kbd> 다시 · <kbd>Esc</kbd> 처음<br><kbd>[</kbd> <kbd>]</kbd> 핀치 민감도 <span id="pinchLevel"></span><br><span id="pinchValue">지금 – · 맞댐 기준 –</span></p>
 </aside>
 
 <section class="card glass" id="card" hidden>
@@ -407,15 +407,16 @@ button:disabled { opacity: 0.55; cursor: progress; }
 const MP = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
 const MODEL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
 
-// 핀치 판정: 엄지·검지 끝 거리를 손바닥 크기(손목~중지 뿌리)로 나눈 값.
-// 민감도 단계마다 이 값보다 가까우면 맞댄 것으로 본다. 1이 가장 둔하고, 5는 처음 버전과 같다.
-const PINCH_LEVELS = [0.18, 0.21, 0.24, 0.27, 0.3];
+// 핀치 판정: 엄지·검지 끝의 3D 거리를 손바닥 길이(손목~중지 뿌리, 3D)로 나눈 값.
+// 손을 기울이거나 카메라 쪽으로 향해도 값이 크게 변하지 않는다.
+// 민감도 단계마다 이 값보다 가까우면 맞댄 것으로 본다. 1이 가장 둔하다.
+const PINCH_LEVELS = [0.24, 0.28, 0.32, 0.36, 0.4];
 const DEFAULT_PINCH_LEVEL = 2;
 // 맞댄 뒤 이만큼 더 벌어져야 뗀 것으로 본다 (경계에서 깜빡이지 않게)
-const PINCH_RELEASE_GAP = 0.15;
-// 손가락이 잠깐 스친 것은 무시한다 (카메라 30fps 기준 2프레임 ≈ 0.07초)
+const PINCH_RELEASE_GAP = 0.12;
+// 손가락이 잠깐 스치거나 값이 튄 것은 무시한다 (카메라 30fps 기준 2프레임 ≈ 0.07초)
 const PINCH_START_FRAMES = 2;
-const PINCH_END_FRAMES = 1;
+const PINCH_END_FRAMES = 2;
 const HAND_OPEN = 0.95;
 // 카메라 화면 중 이 상자를 벽 전체로 늘려, 팔을 끝까지 뻗지 않아도 되게 한다
 const REACH = { x0: 0.18, x1: 0.82, y0: 0.15, y1: 0.78 };
@@ -535,7 +536,7 @@ const S = {
   locked: new Set(),
   dragging: null,
 };
-const input = { x: 0, y: 0, visible: false, pinching: false, amount: 0, lastSeen: 0, history: [] };
+const input = { x: 0, y: 0, visible: false, pinching: false, amount: 0, ratio: 1, lastSeen: 0, history: [] };
 const ripples = [];
 let advanceTimer = 0, feedbackTimer = 0, doneTimer = 0;
 
@@ -1093,7 +1094,7 @@ const filterY = new OneEuro();
 let closeFrames = 0, openFrames = 0;
 let pinchLevel = DEFAULT_PINCH_LEVEL;
 try {
-  const stored = localStorage.getItem("pinchLevel2");
+  const stored = localStorage.getItem("pinchLevel3");
   const saved = stored === null ? NaN : Number(stored);
   if (Number.isInteger(saved) && saved >= 0 && saved < PINCH_LEVELS.length) pinchLevel = saved;
 } catch {}
@@ -1156,15 +1157,20 @@ function trackHand(now) {
     lastVideoTime = video.currentTime;
     const result = landmarker.detectForVideo(video, now);
     latestHand = result.landmarks?.[0] || null;
-    if (latestHand) readHand(latestHand, now);
+    if (latestHand) readHand(latestHand, result.worldLandmarks?.[0], now);
   }
   if (input.visible && now - input.lastSeen > HAND_LOST_MS) loseHand();
 }
 
-function readHand(lm, now) {
+function readHand(lm, world, now) {
+  // 화면 위 거리만 쓰면 손을 기울였을 때 손바닥이 짧아 보여, 맞대도 떨어진 것으로 본다.
+  // 그래서 MediaPipe가 주는 미터 단위 3D 좌표(worldLandmarks)로 잰다.
   const aspect = video.videoWidth / video.videoHeight || 16 / 9;
-  const span = (a, b) => Math.hypot((lm[a].x - lm[b].x) * aspect, lm[a].y - lm[b].y);
-  const ratio = span(4, 8) / Math.max(span(0, 9), 1e-3);
+  const span = world
+    ? (a, b) => Math.hypot(world[a].x - world[b].x, world[a].y - world[b].y, world[a].z - world[b].z)
+    : (a, b) => Math.hypot((lm[a].x - lm[b].x) * aspect, lm[a].y - lm[b].y);
+  const ratio = span(4, 8) / Math.max(span(0, 9), 1e-4);
+  input.ratio = ratio;
   // 좌우 반전한 엄지·검지 끝 가운데를 커서로 쓴다
   const mx = 1 - (lm[4].x + lm[8].x) / 2;
   const my = (lm[4].y + lm[8].y) / 2;
@@ -1195,7 +1201,7 @@ function readHand(lm, now) {
 
 function setPinchLevel(level) {
   pinchLevel = clamp(level, 0, PINCH_LEVELS.length - 1);
-  try { localStorage.setItem("pinchLevel2", String(pinchLevel)); } catch {}
+  try { localStorage.setItem("pinchLevel3", String(pinchLevel)); } catch {}
   $("pinchLevel").textContent = `${pinchLevel + 1}/${PINCH_LEVELS.length}`;
 }
 
@@ -1625,9 +1631,12 @@ function renderStatus() {
   else if (cameraStarting && !cameraReady) { kind = "warn"; text = "준비하는 중…"; }
   else if (cameraReady && input.visible) { kind = "ok"; text = input.pinching ? "손가락 맞댐" : "손이 보여요"; }
   else if (cameraReady) { kind = "warn"; text = "손이 안 보여요"; }
-  const key = kind + text;
+  // 운영자가 민감도를 맞출 수 있게 지금 손가락 사이 값과 기준을 같이 보여 준다
+  const value = S.mode === "camera" && input.visible ? input.ratio.toFixed(2) : "–";
+  const key = `${kind}${text}${value}${pinchLevel}`;
   if (key === lastStatus) return;
   lastStatus = key;
+  $("pinchValue").textContent = `지금 ${value} · 맞댐 기준 ${PINCH_LEVELS[pinchLevel].toFixed(2)}`;
   $("camDot").className = `dot ${kind}`;
   $("camText").textContent = text;
   $("modeBtn").textContent = S.mode === "mouse" ? "카메라로 바꾸기" : "마우스로 바꾸기";
