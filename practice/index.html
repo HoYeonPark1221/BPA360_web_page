@@ -1,0 +1,1151 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>손동작 연습</title>
+<style>
+/* 레이아웃: 현장 벽(캔버스)을 화면 가득 깔고, visionOS 유리 패널을 위(단계)·오른쪽 위(카메라)·아래(안내)에 띄운다 */
+:root {
+  --room: #191614;
+  --glass: rgba(34, 31, 34, 0.6);
+  --glass-strong: rgba(26, 24, 27, 0.8);
+  --edge: rgba(255, 255, 255, 0.16);
+  --ink: #f6f4f1;
+  --ink-2: rgba(246, 244, 241, 0.74);
+  --ink-3: rgba(246, 244, 241, 0.5);
+  --focus: #9fd8ff;
+  --ok: #86e3a8;
+  --warn: #ffd27a;
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+  --display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--room);
+  color: var(--ink);
+  font-family: var(--sans);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+[hidden] { display: none !important; }
+#wall { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+body.mouse #wall { cursor: none; }
+#video { position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+.glass {
+  background: var(--glass);
+  border: 1px solid var(--edge);
+  -webkit-backdrop-filter: blur(28px) saturate(1.5);
+  backdrop-filter: blur(28px) saturate(1.5);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* 단계 표시 */
+.steps {
+  position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 4px; margin: 0; padding: 6px; list-style: none; border-radius: 999px;
+}
+.steps li {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 16px 8px 10px; border-radius: 999px;
+  font-size: 15px; font-weight: 600; color: var(--ink-3); white-space: nowrap;
+  transition: background 0.25s, color 0.25s;
+}
+.steps .n {
+  display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+  border: 1.5px solid currentColor; font-size: 12px; font-variant-numeric: tabular-nums;
+}
+.steps li.current { background: rgba(255, 255, 255, 0.18); color: var(--ink); }
+.steps li.done { color: var(--ink-2); }
+.steps li.done .n { background: var(--ok); border-color: var(--ok); color: #10301c; }
+
+/* 카메라 */
+.cam {
+  position: fixed; top: 20px; right: 20px; width: 260px;
+  padding: 10px; border-radius: 24px; display: grid; gap: 8px;
+}
+#camView { width: 100%; aspect-ratio: 16 / 9; border-radius: 16px; background: #0d0c0d; display: block; }
+.cam-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 4px; }
+.cam-status { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--ink-2); min-width: 0; }
+.cam-status span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); }
+.dot.ok { background: var(--ok); box-shadow: 0 0 10px var(--ok); }
+.dot.warn { background: var(--warn); }
+.keys { margin: 0; padding: 0 4px 2px; font-size: 11.5px; color: var(--ink-3); line-height: 1.5; }
+.keys kbd { font-family: inherit; padding: 0 5px; border-radius: 5px; border: 1px solid var(--edge); }
+
+/* 안내 카드 */
+.card {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+  width: min(780px, calc(100% - 32px));
+  padding: 22px 28px 20px; border-radius: 30px;
+  display: grid; gap: 8px;
+}
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.eyebrow { margin: 0; font-size: 13.5px; font-weight: 600; letter-spacing: 0.04em; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.pips { display: flex; gap: 6px; }
+.pips i { width: 26px; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.16); transition: background 0.25s; }
+.pips i.on { background: var(--ok); }
+.card h1 { margin: 0; font-family: var(--display); font-size: 30px; font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
+.card .body { margin: 0; font-size: 20px; line-height: 1.5; color: var(--ink); text-wrap: pretty; }
+.tip { margin: 2px 0 0; font-size: 15.5px; line-height: 1.55; color: var(--ink-2); display: flex; gap: 10px; align-items: baseline; }
+.tip-label {
+  flex: none; font-size: 12.5px; font-weight: 700; color: var(--focus);
+  padding: 2px 9px; border-radius: 999px; background: rgba(159, 216, 255, 0.14);
+}
+.card-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; margin-top: 4px; }
+.feedback { font-size: 16px; font-weight: 600; color: var(--ink-2); min-width: 0; }
+.feedback.ok { color: var(--ok); }
+.feedback.warn { color: var(--warn); }
+.card-actions { display: flex; gap: 8px; flex: none; }
+
+/* 버튼 */
+button {
+  font: inherit; border: 0; cursor: pointer; border-radius: 999px;
+  transition: background 0.2s, transform 0.15s, opacity 0.2s;
+}
+button:active { transform: scale(0.97); }
+button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+button:disabled { opacity: 0.55; cursor: progress; }
+.primary { background: var(--ink); color: #161416; font-size: 17px; font-weight: 700; padding: 14px 28px; }
+.primary:hover:not(:disabled) { background: #fff; }
+.ghost { background: rgba(255, 255, 255, 0.12); color: var(--ink); font-size: 15px; font-weight: 600; padding: 10px 18px; }
+.ghost:hover:not(:disabled) { background: rgba(255, 255, 255, 0.2); }
+.small { font-size: 12.5px; padding: 6px 12px; flex: none; }
+
+/* 시작·완료 화면 */
+.overlay {
+  position: fixed; inset: 0; display: grid; place-items: center; padding: 24px;
+  background: rgba(12, 10, 10, 0.42);
+}
+.panel {
+  width: min(640px, 100%); padding: 36px 40px; border-radius: 34px;
+  background: var(--glass-strong); display: grid; gap: 14px;
+}
+.panel h2 { margin: 0; font-family: var(--display); font-size: 38px; line-height: 1.22; font-weight: 700; letter-spacing: -0.015em; text-wrap: balance; }
+.lead { margin: 0; font-size: 19px; line-height: 1.55; color: var(--ink-2); text-wrap: pretty; }
+.howto, .recap { margin: 4px 0 0; padding-left: 22px; display: grid; gap: 8px; font-size: 17px; line-height: 1.5; color: var(--ink-2); }
+.howto b, .recap b { color: var(--ink); }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.actions .ghost { font-size: 17px; padding: 14px 24px; }
+.error { margin: 0; font-size: 15.5px; line-height: 1.5; color: var(--warn); }
+.fine { margin: 0; font-size: 13.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+@media (max-width: 900px) {
+  .steps li { padding: 6px 10px 6px 6px; font-size: 13px; }
+  .cam { width: 200px; }
+  .card h1 { font-size: 24px; }
+  .card .body { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+</style>
+</head>
+<body>
+<canvas id="wall"></canvas>
+<video id="video" playsinline muted></video>
+
+<ol class="steps glass" id="steps">
+  <li data-stage="pinch"><span class="n">1</span>맞대기</li>
+  <li data-stage="tap"><span class="n">2</span>보고 집기</li>
+  <li data-stage="drag"><span class="n">3</span>집고 끌기</li>
+  <li data-stage="draw"><span class="n">4</span>가리켜 그리기</li>
+</ol>
+
+<aside class="cam glass">
+  <canvas id="camView" width="480" height="270"></canvas>
+  <div class="cam-row">
+    <div class="cam-status"><span class="dot" id="camDot"></span><span id="camText">카메라 꺼짐</span></div>
+    <button id="modeBtn" class="ghost small" type="button">마우스로 바꾸기</button>
+  </div>
+  <p class="keys"><kbd>←</kbd> <kbd>→</kbd> 단계 · <kbd>R</kbd> 다시 · <kbd>Esc</kbd> 처음</p>
+</aside>
+
+<section class="card glass" id="card" hidden>
+  <div class="card-head">
+    <p class="eyebrow" id="cardStep">1 / 4</p>
+    <div class="pips" id="pips"></div>
+  </div>
+  <h1 id="cardTitle"></h1>
+  <p class="body" id="cardBody"></p>
+  <p class="tip"><span class="tip-label">Vision Pro에서는</span><span id="cardTip"></span></p>
+  <div class="card-foot">
+    <div class="feedback" id="feedback" aria-live="polite"></div>
+    <div class="card-actions">
+      <button id="retryBtn" class="ghost" type="button">이 단계 다시</button>
+      <button id="skipBtn" class="ghost" type="button">건너뛰기</button>
+    </div>
+  </div>
+</section>
+
+<div class="overlay" id="intro">
+  <div class="panel">
+    <p class="eyebrow">BPA 360 · 체험 전 연습</p>
+    <h2>Vision Pro를 쓰기 전에<br>손동작 4가지를 연습해 봐요</h2>
+    <p class="lead">앱에서 하는 순서 그대로 혈흔을 고르고, 줄을 이어, 수렴 영역을 그려요. 1~2분이면 끝나요.</p>
+    <ul class="howto">
+      <li><b>오른손을 카메라 앞에</b> 들어 주세요. 오른쪽 위 화면에 손이 보이면 준비 끝이에요.</li>
+      <li>엄지와 검지 사이의 <b>흰 원</b>이 손을 따라다니는 커서예요.</li>
+    </ul>
+    <div class="actions">
+      <button id="startCam" class="primary" type="button">카메라로 시작</button>
+      <button id="startMouse" class="ghost" type="button">마우스로 해보기</button>
+    </div>
+    <p class="error" id="introError" hidden></p>
+  </div>
+</div>
+
+<div class="overlay" id="done" hidden>
+  <div class="panel">
+    <p class="eyebrow" id="doneTime">연습 완료</p>
+    <h2>준비됐어요</h2>
+    <p class="lead">Vision Pro를 쓰면 이것만 기억하세요.</p>
+    <ol class="recap">
+      <li><b>보고, 맞대기.</b> 고를 것을 바라본 다음 엄지와 검지를 맞대요.</li>
+      <li><b>손은 편하게.</b> 무릎 위나 몸 옆에 내려 둬도 기기가 알아봐요.</li>
+      <li><b>벽에 그릴 땐 손으로 가리키기.</b> 오른팔을 벽 쪽으로 뻗어요.</li>
+    </ol>
+    <div class="actions"><button id="againBtn" class="primary" type="button">다음 분 시작</button></div>
+    <p class="fine" id="autoReset"></p>
+  </div>
+</div>
+
+<script type="module">
+const MP = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+const MODEL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
+
+// 핀치 판정: 엄지·검지 끝 거리를 손바닥 크기(손목~중지 뿌리)로 나눈 값
+const PINCH_ON = 0.3;
+const PINCH_OFF = 0.45;
+const HAND_OPEN = 0.95;
+// 카메라 화면 중 이 상자를 벽 전체로 늘려, 팔을 끝까지 뻗지 않아도 되게 한다
+const REACH = { x0: 0.18, x1: 0.82, y0: 0.15, y1: 0.78 };
+// 손가락을 맞대거나 뗄 때 커서가 밀리므로, 판정은 조금 전 위치로 한다
+const PINCH_LOOKBACK_MS = 90;
+const HAND_LOST_MS = 250;
+const IDLE_RESET_MS = 45000;
+const DONE_RESET_S = 25;
+
+const STAGES = ["pinch", "tap", "drag", "draw"];
+const GOAL = { pinch: 3, tap: 3, drag: 3, draw: 1 };
+const COPY = {
+  pinch: {
+    title: "손가락 맞대기",
+    camera: "엄지와 검지 끝을 가볍게 맞댔다가 떼세요. 3번 해 볼게요.",
+    mouse: "클릭이 손가락 맞대기를 대신해요. 아무 곳이나 3번 클릭해 보세요.",
+    tip: "손을 무릎 위나 몸 옆에 내려 둔 채로 맞대도 알아봐요. 허공을 누를 필요는 없어요.",
+  },
+  tap: {
+    title: "보고 집기",
+    camera: "혈흔을 가리켜 밝아지면 손가락을 맞대 고르세요. 혈흔 3개를 골라요.",
+    mouse: "혈흔 위에 마우스를 올려 밝아지면 클릭해 고르세요. 혈흔 3개를 골라요.",
+    tip: "손 대신 눈으로 가리켜요. 혈흔을 바라보면 밝아지고, 그때 손가락을 맞대면 골라져요.",
+  },
+  drag: {
+    title: "집고 끌기",
+    camera: "혈흔 가운데 흰 점을 집은 채로 손을 옮겨, 점선 원 안에서 떼세요. 줄 3개를 이어요.",
+    mouse: "혈흔 가운데 흰 점을 누른 채로 끌어, 점선 원 안에서 놓으세요. 줄 3개를 이어요.",
+    tip: "흰 점을 보고 맞댄 다음, 맞댄 채로 손을 옮기면 줄이 따라와요. 떼면 그 자리에 놓여요.",
+  },
+  draw: {
+    title: "가리켜 그리기",
+    camera: "줄이 모이는 곳을 감싸도록, 손가락을 맞댄 채 대각선으로 움직여 사각형을 그리세요.",
+    mouse: "줄이 모이는 곳을 감싸도록, 누른 채로 대각선으로 끌어 사각형을 그리세요.",
+    tip: "이 단계는 눈이 아니라 오른손이 가리키는 곳에 그려져요. 팔을 벽 쪽으로 편하게 뻗어 보세요.",
+  },
+};
+
+// 벽의 혈흔: 폭·길이(mm)로 충돌각을 구하고, 긴 축이 수렴점을 향하게 놓는다
+const ORIGIN = { nx: 0.5, ny: 0.38 };
+const STAINS = [
+  { id: 1, nx: 0.21, ny: 0.24, width: 4.1, length: 8.6 },
+  { id: 2, nx: 0.7, ny: 0.23, width: 3.8, length: 6.2 },
+  { id: 3, nx: 0.3, ny: 0.55, width: 4.4, length: 9.9 },
+].map((s) => ({ ...s, impact: Math.round((Math.asin(s.width / s.length) * 180) / Math.PI) }));
+
+const TAU = Math.PI * 2;
+const HAND_LINKS = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[0,17],[17,18],[18,19],[19,20]];
+const CANVAS_FONT = '-apple-system, "Apple SD Gothic Neo", sans-serif';
+
+const $ = (id) => document.getElementById(id);
+const wall = $("wall");
+const ctx = wall.getContext("2d");
+const camView = $("camView");
+const cctx = camView.getContext("2d");
+const video = $("video");
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+
+// ---------- 화면 크기와 벽 ----------
+let W = 0, H = 0, U = 1;
+const origin = { x: 0, y: 0 };
+let wallTexture = null;
+
+function layout() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  W = innerWidth;
+  H = innerHeight;
+  U = Math.min(W / 1600, H / 900);
+  wall.width = Math.round(W * dpr);
+  wall.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  origin.x = ORIGIN.nx * W;
+  origin.y = ORIGIN.ny * H;
+  for (const s of STAINS) {
+    s.x = s.nx * W;
+    s.y = s.ny * H;
+    s.ang = Math.atan2(s.y - origin.y, s.x - origin.x); // 날아간 방향 = 꼬리 방향
+    s.a = s.length * 3.4 * U;
+    s.b = s.width * 3.4 * U;
+  }
+  wallTexture = W > 0 && H > 0 ? paintWall(wall.width, wall.height) : null;
+}
+
+function paintWall(w, h) {
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  const g = c.getContext("2d");
+  const base = g.createLinearGradient(0, 0, 0, h);
+  base.addColorStop(0, "#d8d1c6");
+  base.addColorStop(1, "#b9b0a3");
+  g.fillStyle = base;
+  g.fillRect(0, 0, w, h);
+  // 회벽 질감
+  const tile = document.createElement("canvas");
+  tile.width = tile.height = 160;
+  const t = tile.getContext("2d");
+  for (let i = 0; i < 2600; i++) {
+    const v = Math.random() < 0.5 ? 0 : 255;
+    t.fillStyle = `rgba(${v},${v},${v},${Math.random() * 0.06})`;
+    t.fillRect(Math.random() * 160, Math.random() * 160, 1 + Math.random() * 2, 1 + Math.random() * 2);
+  }
+  g.fillStyle = g.createPattern(tile, "repeat");
+  g.fillRect(0, 0, w, h);
+  // 방 조명이 가운데 위에서 떨어지는 느낌
+  const light = g.createRadialGradient(w * 0.48, h * 0.3, 0, w * 0.48, h * 0.3, Math.max(w, h) * 0.75);
+  light.addColorStop(0, "rgba(255,248,236,0.18)");
+  light.addColorStop(0.55, "rgba(0,0,0,0)");
+  light.addColorStop(1, "rgba(20,12,8,0.55)");
+  g.fillStyle = light;
+  g.fillRect(0, 0, w, h);
+  return c;
+}
+
+// ---------- 상태 ----------
+const S = {
+  stage: "intro", // intro | pinch | tap | drag | draw | done
+  mode: null, // camera | mouse
+  startedAt: 0,
+  pinchCount: 0,
+  selected: new Set(),
+  locked: new Set(),
+  dragging: null,
+  drawing: null,
+  area: null,
+  hover: null,
+  transitioning: false,
+  lastActivity: 0,
+};
+const input = { x: 0, y: 0, visible: false, pinching: false, amount: 0, lastSeen: 0, history: [] };
+const ripples = [];
+let advanceTimer = 0, feedbackTimer = 0, doneTimer = 0;
+
+// ---------- 핀치 입력 (카메라·마우스 공통) ----------
+function acceptsInput() {
+  return STAGES.includes(S.stage) && !S.transitioning;
+}
+
+function pinchStart(p) {
+  S.lastActivity = performance.now();
+  if (!acceptsInput()) return;
+  if (S.stage === "tap") {
+    const s = stainAt(p);
+    if (!s) {
+      ripple(p.x, p.y, "miss");
+      say("빈 곳이에요. 혈흔이 밝아졌을 때 맞대 보세요.", "warn");
+    } else if (!S.selected.has(s.id)) {
+      S.selected.add(s.id);
+      ripple(s.x, s.y, "ok");
+      say(`혈흔 ${s.id}을 골랐어요.`, "ok");
+      if (S.selected.size >= GOAL.tap) complete();
+    }
+  } else if (S.stage === "drag") {
+    const s = handleAt(p);
+    if (s) {
+      S.dragging = s.id;
+      say("좋아요. 맞댄 채로 점선 원까지 옮기세요.");
+    } else {
+      ripple(p.x, p.y, "miss");
+      say("혈흔 가운데 흰 점을 집어 보세요.", "warn");
+    }
+  } else if (S.stage === "draw" && !S.area) {
+    S.drawing = { x0: p.x, y0: p.y, x1: p.x, y1: p.y };
+  }
+}
+
+function pinchMove(p) {
+  if (S.drawing) {
+    S.drawing.x1 = p.x;
+    S.drawing.y1 = p.y;
+  }
+}
+
+function pinchEnd(p) {
+  S.lastActivity = performance.now();
+  if (!acceptsInput()) return;
+  if (S.stage === "pinch") {
+    S.pinchCount++;
+    ripple(W / 2, H * 0.4, "ok");
+    say(S.pinchCount >= GOAL.pinch ? "" : `${S.pinchCount}번 했어요.`, "ok");
+    if (S.pinchCount >= GOAL.pinch) complete();
+  } else if (S.stage === "drag" && S.dragging != null) {
+    const id = S.dragging;
+    S.dragging = null;
+    if (inTarget(p)) {
+      S.locked.add(id);
+      ripple(origin.x, origin.y, "ok");
+      say("줄이 이어졌어요.", "ok");
+      if (S.locked.size >= GOAL.drag) complete();
+    } else {
+      say("점선 원 안에서 손가락을 떼 주세요.", "warn");
+    }
+  } else if (S.stage === "draw" && S.drawing) {
+    const r = rectOf(S.drawing);
+    S.drawing = null;
+    const pad = 14 * U;
+    const holdsOrigin = origin.x > r.x + pad && origin.x < r.x + r.w - pad && origin.y > r.y + pad && origin.y < r.y + r.h - pad;
+    if (r.w < 60 * U || r.h < 60 * U) {
+      say("조금 더 크게 그려 보세요.", "warn");
+    } else if (r.w * r.h > W * H * 0.3) {
+      say("너무 커요. 줄이 모이는 곳만 감싸 보세요.", "warn");
+    } else if (!holdsOrigin) {
+      say("줄이 모이는 곳이 사각형 안에 들어오게 그려 주세요.", "warn");
+    } else {
+      S.area = r;
+      complete();
+    }
+  }
+}
+
+// 손이 카메라 밖으로 나가면 잡고 있던 것을 내려놓는다 (앱의 pinchCancelled와 같다)
+function pinchCancel() {
+  if (S.dragging != null) {
+    S.dragging = null;
+    say("손이 안 보여서 놓쳤어요. 다시 집어 주세요.", "warn");
+  }
+  if (S.drawing) {
+    S.drawing = null;
+    say("손이 안 보여서 그리기를 멈췄어요. 다시 그려 주세요.", "warn");
+  }
+}
+
+function stainAt(p) {
+  let best = null, bestD = Infinity;
+  for (const s of STAINS) {
+    const d = dist(p, s);
+    if (d < s.a * 1.3 + 24 * U && d < bestD) { best = s; bestD = d; }
+  }
+  return best;
+}
+
+function handleAt(p) {
+  let best = null, bestD = Infinity;
+  for (const s of STAINS) {
+    if (S.locked.has(s.id)) continue;
+    const d = dist(p, s);
+    if (d < 40 * U && d < bestD) { best = s; bestD = d; }
+  }
+  return best;
+}
+
+const targetRadius = () => 56 * U;
+const inTarget = (p) => dist(p, origin) < targetRadius() * 1.15;
+const rectOf = (d) => ({ x: Math.min(d.x0, d.x1), y: Math.min(d.y0, d.y1), w: Math.abs(d.x1 - d.x0), h: Math.abs(d.y1 - d.y0) });
+
+function positionAgo(ms) {
+  const t = performance.now() - ms;
+  for (let i = input.history.length - 1; i >= 0; i--) {
+    if (input.history[i].t <= t) return input.history[i];
+  }
+  return input.history[0] || { x: input.x, y: input.y };
+}
+
+// ---------- 단계 진행 ----------
+function enterStage(stage) {
+  clearTimeout(advanceTimer);
+  clearTimeout(doneTimer);
+  S.stage = stage;
+  S.transitioning = false;
+  S.dragging = null;
+  S.drawing = null;
+  const i = STAGES.indexOf(stage);
+  if (stage === "pinch") S.pinchCount = 0;
+  // 건너뛴 단계가 있어도 장면이 이어지게 앞 단계 결과를 채운다
+  if (i >= 0) {
+    S.selected = i > 1 ? new Set(STAINS.map((s) => s.id)) : i === 1 ? new Set() : S.selected;
+    S.locked = i > 2 ? new Set(STAINS.map((s) => s.id)) : new Set();
+    S.area = null;
+  }
+  $("intro").hidden = stage !== "intro";
+  $("done").hidden = stage !== "done";
+  $("card").hidden = i < 0;
+  say("");
+  renderSteps();
+  renderCard();
+  if (stage === "done") startDoneCountdown();
+}
+
+function complete() {
+  if (S.transitioning) return;
+  S.transitioning = true;
+  const i = STAGES.indexOf(S.stage);
+  say(i === STAGES.length - 1 ? "완벽해요!" : "잘했어요! 다음 단계로 넘어가요.", "ok", 0);
+  renderCard();
+  advanceTimer = setTimeout(() => enterStage(STAGES[i + 1] || "done"), 1200);
+}
+
+function go(delta) {
+  const i = STAGES.indexOf(S.stage);
+  if (i < 0) return;
+  const next = i + delta;
+  if (next < 0) return;
+  enterStage(STAGES[next] || "done");
+}
+
+function resetAll() {
+  S.selected = new Set();
+  S.locked = new Set();
+  S.area = null;
+  enterStage("intro");
+}
+
+function beginPractice() {
+  S.startedAt = performance.now();
+  S.lastActivity = S.startedAt;
+  S.selected = new Set();
+  S.locked = new Set();
+  S.area = null;
+  enterStage("pinch");
+}
+
+function progress() {
+  switch (S.stage) {
+    case "pinch": return S.pinchCount;
+    case "tap": return S.selected.size;
+    case "drag": return S.locked.size;
+    case "draw": return S.area ? 1 : 0;
+    default: return 0;
+  }
+}
+
+function renderSteps() {
+  const i = STAGES.indexOf(S.stage);
+  for (const li of $("steps").children) {
+    const j = STAGES.indexOf(li.dataset.stage);
+    li.classList.toggle("current", j === i);
+    li.classList.toggle("done", S.stage === "done" || (i >= 0 && j < i));
+    li.querySelector(".n").textContent = S.stage === "done" || (i >= 0 && j < i) ? "✓" : String(j + 1);
+  }
+}
+
+let lastCardKey = "";
+function renderCard() {
+  const i = STAGES.indexOf(S.stage);
+  if (i < 0) return;
+  const copy = COPY[S.stage];
+  const key = `${S.stage}|${S.mode}|${progress()}`;
+  if (key === lastCardKey) return;
+  lastCardKey = key;
+  $("cardStep").textContent = `${i + 1} / ${STAGES.length}`;
+  $("cardTitle").textContent = copy.title;
+  $("cardBody").textContent = S.mode === "mouse" ? copy.mouse : copy.camera;
+  $("cardTip").textContent = copy.tip;
+  const goal = GOAL[S.stage];
+  const done = progress();
+  $("pips").innerHTML = Array.from({ length: goal }, (_, k) => `<i class="${k < done ? "on" : ""}"></i>`).join("");
+}
+
+function say(text, kind = "", ms = 2600) {
+  clearTimeout(feedbackTimer);
+  const el = $("feedback");
+  el.textContent = text;
+  el.className = `feedback ${kind}`;
+  if (text && ms) feedbackTimer = setTimeout(() => { el.textContent = ""; }, ms);
+}
+
+function startDoneCountdown() {
+  const secs = Math.round((performance.now() - S.startedAt) / 1000);
+  $("doneTime").textContent = `연습 완료 · ${Math.floor(secs / 60)}분 ${secs % 60}초 걸렸어요`;
+  let left = DONE_RESET_S;
+  const tick = () => {
+    $("autoReset").textContent = `${left}초 뒤 처음 화면으로 돌아가요.`;
+    if (left-- <= 0) return resetAll();
+    doneTimer = setTimeout(tick, 1000);
+  };
+  tick();
+}
+
+function ripple(x, y, kind) {
+  ripples.push({ x, y, kind, t0: performance.now() });
+}
+
+// ---------- 카메라 손 추적 ----------
+let landmarker = null;
+let cameraReady = false;
+let cameraStarting = null;
+let latestHand = null;
+let lastVideoTime = -1;
+
+class OneEuro {
+  constructor(minCutoff = 1.0, beta = 0.006) { this.minCutoff = minCutoff; this.beta = beta; this.reset(); }
+  reset() { this.t = null; }
+  static alpha(dt, cutoff) { const tau = 1 / (TAU * cutoff); return 1 / (1 + tau / dt); }
+  filter(x, t) {
+    if (this.t == null) { this.t = t; this.x = x; this.dx = 0; return x; }
+    const dt = Math.max((t - this.t) / 1000, 1e-3);
+    this.t = t;
+    this.dx += OneEuro.alpha(dt, 1) * ((x - this.x) / dt - this.dx);
+    this.x += OneEuro.alpha(dt, this.minCutoff + this.beta * Math.abs(this.dx)) * (x - this.x);
+    return this.x;
+  }
+}
+const filterX = new OneEuro();
+const filterY = new OneEuro();
+
+async function initCamera(onProgress) {
+  if (cameraReady) return;
+  if (!cameraStarting) {
+    cameraStarting = (async () => {
+      if (!navigator.mediaDevices?.getUserMedia) throw new Error(window.isSecureContext ? "camera" : "insecure");
+      onProgress("카메라 권한을 확인하는 중…");
+      try {
+        video.srcObject = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" },
+          audio: false,
+        });
+        await video.play();
+      } catch {
+        throw new Error("camera");
+      }
+      onProgress("손 인식 모델을 불러오는 중…");
+      try {
+        const { FilesetResolver, HandLandmarker } = await import(`${MP}/vision_bundle.mjs`);
+        const fileset = await FilesetResolver.forVisionTasks(`${MP}/wasm`);
+        const options = (delegate) => ({
+          baseOptions: { modelAssetPath: MODEL, delegate },
+          runningMode: "VIDEO",
+          numHands: 1,
+          minHandDetectionConfidence: 0.6,
+          minHandPresenceConfidence: 0.6,
+          minTrackingConfidence: 0.5,
+        });
+        try {
+          landmarker = await HandLandmarker.createFromOptions(fileset, options("GPU"));
+        } catch {
+          landmarker = await HandLandmarker.createFromOptions(fileset, options("CPU"));
+        }
+      } catch {
+        throw new Error("model");
+      }
+      cameraReady = true;
+    })();
+  }
+  try {
+    await cameraStarting;
+  } catch (e) {
+    cameraStarting = null;
+    throw e;
+  }
+}
+
+function cameraErrorText(e) {
+  if (e.message === "insecure") return "카메라는 localhost 주소로 열어야 쓸 수 있어요. 안내한 실행 명령으로 다시 열어 주세요.";
+  if (e.message === "model") return "손 인식 모델을 받지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.";
+  return "카메라를 켜지 못했어요. 주소창 옆에서 카메라를 허용하고 다시 눌러 주세요. 바로 해 보려면 마우스로 해보기를 누르세요.";
+}
+
+function trackHand(now) {
+  if (!landmarker || video.readyState < 2) return;
+  if (video.currentTime !== lastVideoTime) {
+    lastVideoTime = video.currentTime;
+    const result = landmarker.detectForVideo(video, now);
+    latestHand = result.landmarks?.[0] || null;
+    if (latestHand) readHand(latestHand, now);
+  }
+  if (input.visible && now - input.lastSeen > HAND_LOST_MS) loseHand();
+}
+
+function readHand(lm, now) {
+  const aspect = video.videoWidth / video.videoHeight || 16 / 9;
+  const span = (a, b) => Math.hypot((a.x - b.x) * aspect, a.y - b.y);
+  const ratio = span(lm[4], lm[8]) / Math.max(span(lm[0], lm[9]), 1e-3);
+  // 좌우 반전한 엄지·검지 끝 가운데를 커서로 쓴다
+  const mx = 1 - (lm[4].x + lm[8].x) / 2;
+  const my = (lm[4].y + lm[8].y) / 2;
+  const sx = clamp((mx - REACH.x0) / (REACH.x1 - REACH.x0), 0, 1) * W;
+  const sy = clamp((my - REACH.y0) / (REACH.y1 - REACH.y0), 0, 1) * H;
+  input.x = filterX.filter(sx, now);
+  input.y = filterY.filter(sy, now);
+  input.visible = true;
+  input.lastSeen = now;
+  S.lastActivity = now;
+  input.history.push({ t: now, x: input.x, y: input.y });
+  while (input.history.length && now - input.history[0].t > 400) input.history.shift();
+  input.amount = clamp((HAND_OPEN - ratio) / (HAND_OPEN - PINCH_ON), 0, 1);
+
+  if (!input.pinching && ratio < PINCH_ON) {
+    input.pinching = true;
+    pinchStart(positionAgo(PINCH_LOOKBACK_MS));
+  } else if (input.pinching && ratio > PINCH_OFF) {
+    input.pinching = false;
+    pinchEnd(positionAgo(PINCH_LOOKBACK_MS));
+  } else if (input.pinching) {
+    pinchMove(input);
+  }
+}
+
+function loseHand() {
+  input.visible = false;
+  input.amount = 0;
+  input.history = [];
+  latestHand = null;
+  filterX.reset();
+  filterY.reset();
+  if (input.pinching) {
+    input.pinching = false;
+    pinchCancel();
+  }
+}
+
+// ---------- 마우스 입력 ----------
+wall.addEventListener("pointermove", (e) => {
+  if (S.mode !== "mouse") return;
+  input.x = e.clientX;
+  input.y = e.clientY;
+  input.visible = true;
+  if (input.pinching) pinchMove(input);
+});
+wall.addEventListener("pointerdown", (e) => {
+  if (S.mode !== "mouse" || e.button !== 0) return;
+  wall.setPointerCapture(e.pointerId);
+  input.x = e.clientX;
+  input.y = e.clientY;
+  input.visible = true;
+  input.pinching = true;
+  input.amount = 1;
+  pinchStart(input);
+});
+const mouseUp = (e) => {
+  if (S.mode !== "mouse" || !input.pinching) return;
+  input.pinching = false;
+  input.amount = 0;
+  if (e.type === "pointercancel") pinchCancel();
+  else pinchEnd({ x: e.clientX, y: e.clientY });
+};
+wall.addEventListener("pointerup", mouseUp);
+wall.addEventListener("pointercancel", mouseUp);
+wall.addEventListener("pointerleave", () => {
+  if (S.mode === "mouse" && !input.pinching) input.visible = false;
+});
+
+// ---------- 그리기 ----------
+function draw(now) {
+  if (!wallTexture) return;
+  ctx.clearRect(0, 0, W, H);
+  ctx.drawImage(wallTexture, 0, 0, W, H);
+  if (S.stage === "pinch") drawPinchMeter();
+  else drawScene(now);
+  drawRipples(now);
+  if (input.visible && S.stage !== "pinch" && STAGES.includes(S.stage)) drawCursor();
+}
+
+function drawScene(now) {
+  const showHandles = S.stage === "drag";
+  // 이어진 줄: 혈흔에서 수렴점을 지나 조금 더
+  for (const s of STAINS) {
+    if (!S.locked.has(s.id)) continue;
+    const ex = origin.x + (origin.x - s.x) * 0.1;
+    const ey = origin.y + (origin.y - s.y) * 0.1;
+    drawString(s.x, s.y, ex, ey);
+  }
+  if (S.dragging != null) {
+    const s = STAINS.find((t) => t.id === S.dragging);
+    drawString(s.x, s.y, input.x, input.y);
+  }
+  if (S.stage === "drag") drawTarget(now);
+  for (const s of STAINS) drawStain(s, S.hover === s.id && S.stage === "tap");
+  if (showHandles) for (const s of STAINS) if (!S.locked.has(s.id)) drawHandle(s, S.hover === s.id || S.dragging === s.id);
+  if (S.drawing) drawArea(rectOf(S.drawing), false);
+  if (S.area) drawArea(S.area, true);
+  for (const s of STAINS) if (S.selected.has(s.id)) drawStainLabel(s);
+}
+
+function drawStain(s, highlighted) {
+  ctx.save();
+  ctx.translate(s.x, s.y);
+  ctx.rotate(s.ang);
+  const { a, b } = s;
+  if (highlighted) {
+    // visionOS hoverEffect처럼 바라본 것만 밝게 떠오른다
+    ctx.save();
+    ctx.shadowColor = "rgba(255,255,255,0.95)";
+    ctx.shadowBlur = 26 * U;
+    ctx.beginPath();
+    ctx.ellipse(a * 0.35, 0, a * 1.55, b * 1.7, 0, 0, TAU);
+    ctx.fillStyle = "rgba(255,255,255,0.38)";
+    ctx.fill();
+    ctx.restore();
+  }
+  if (S.selected.has(s.id)) {
+    ctx.beginPath();
+    ctx.ellipse(a * 0.35, 0, a * 1.6, b * 1.85, 0, 0, TAU);
+    ctx.lineWidth = 2.5 * U;
+    ctx.strokeStyle = "rgba(60,170,105,0.95)";
+    ctx.stroke();
+  }
+  ctx.beginPath();
+  ctx.ellipse(0, 0, a, b, 0, 0, TAU);
+  ctx.moveTo(a * 0.55, -b * 0.62);
+  ctx.quadraticCurveTo(a * 1.25, -b * 0.2, a * 1.85, 0);
+  ctx.quadraticCurveTo(a * 1.25, b * 0.2, a * 0.55, b * 0.62);
+  ctx.closePath();
+  const g = ctx.createRadialGradient(-a * 0.25, 0, 1, 0, 0, a * 1.3);
+  g.addColorStop(0, "#43060a");
+  g.addColorStop(0.65, "#6b0d12");
+  g.addColorStop(1, "#8c1d1d");
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.fillStyle = "#6b0d12";
+  for (const [dx, dy, r] of [[2.3, 0.12, 0.2], [2.75, -0.08, 0.12]]) {
+    ctx.beginPath();
+    ctx.arc(a * dx, b * dy, b * r, 0, TAU);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawStainLabel(s) {
+  const text = `혈흔 ${s.id} · 충돌각 ${s.impact}°`;
+  const fs = Math.max(12, 14 * U);
+  ctx.font = `600 ${fs}px ${CANVAS_FONT}`;
+  const w = ctx.measureText(text).width + 22 * U;
+  const h = fs + 14 * U;
+  const x = s.x - w / 2;
+  const y = s.y - Math.max(s.a, s.b) * 1.1 - h - 18 * U;
+  ctx.save();
+  ctx.fillStyle = "rgba(28,26,29,0.78)";
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, h / 2);
+  ctx.fill();
+  ctx.fillStyle = "#f6f4f1";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, s.x, y + h / 2 + 0.5);
+  ctx.restore();
+}
+
+function drawString(x0, y0, x1, y1) {
+  ctx.save();
+  ctx.lineCap = "round";
+  ctx.strokeStyle = "rgba(40,0,0,0.25)";
+  ctx.lineWidth = 5 * U;
+  ctx.beginPath();
+  ctx.moveTo(x0, y0 + 2 * U);
+  ctx.lineTo(x1, y1 + 2 * U);
+  ctx.stroke();
+  ctx.strokeStyle = "#d92b38";
+  ctx.lineWidth = 2.6 * U;
+  ctx.beginPath();
+  ctx.moveTo(x0, y0);
+  ctx.lineTo(x1, y1);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawHandle(s, active) {
+  ctx.save();
+  if (active) {
+    ctx.shadowColor = "rgba(255,255,255,0.95)";
+    ctx.shadowBlur = 18 * U;
+  }
+  ctx.beginPath();
+  ctx.arc(s.x, s.y, (active ? 11 : 8) * U, 0, TAU);
+  ctx.fillStyle = "#fff";
+  ctx.fill();
+  ctx.lineWidth = 2 * U;
+  ctx.strokeStyle = "rgba(30,20,20,0.5)";
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawTarget(now) {
+  const r = targetRadius();
+  const hot = S.dragging != null && inTarget(input);
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(origin.x, origin.y, r, 0, TAU);
+  ctx.fillStyle = hot ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.16)";
+  ctx.fill();
+  ctx.setLineDash([8 * U, 7 * U]);
+  ctx.lineDashOffset = -now / 60;
+  ctx.lineWidth = 2.5 * U;
+  ctx.strokeStyle = hot ? "#ffffff" : "rgba(255,255,255,0.9)";
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.font = `600 ${Math.max(12, 14 * U)}px ${CANVAS_FONT}`;
+  ctx.textAlign = "center";
+  ctx.fillStyle = "rgba(40,30,28,0.85)";
+  ctx.fillText(S.mode === "mouse" ? "여기서 놓기" : "여기서 떼기", origin.x, origin.y - r - 12 * U);
+  ctx.restore();
+}
+
+function drawArea(r, final) {
+  ctx.save();
+  ctx.fillStyle = final ? "rgba(134,227,168,0.2)" : "rgba(255,255,255,0.18)";
+  ctx.fillRect(r.x, r.y, r.w, r.h);
+  ctx.lineWidth = 2.5 * U;
+  if (!final) ctx.setLineDash([9 * U, 6 * U]);
+  ctx.strokeStyle = final ? "rgba(40,150,90,0.95)" : "rgba(255,255,255,0.95)";
+  ctx.strokeRect(r.x, r.y, r.w, r.h);
+  if (final) {
+    ctx.font = `700 ${Math.max(12, 14 * U)}px ${CANVAS_FONT}`;
+    ctx.fillStyle = "rgba(25,90,55,0.95)";
+    ctx.fillText("수렴 영역", r.x + 4 * U, r.y - 10 * U);
+  }
+  ctx.restore();
+}
+
+function drawPinchMeter() {
+  const cx = W / 2, cy = H * 0.4, R = 92 * U;
+  const amount = input.visible ? input.amount : 0;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, TAU);
+  ctx.fillStyle = input.pinching ? "rgba(255,255,255,0.42)" : "rgba(28,26,29,0.55)";
+  ctx.fill();
+  ctx.lineWidth = 3 * U;
+  ctx.strokeStyle = "rgba(255,255,255,0.9)";
+  ctx.stroke();
+  if (S.mode === "camera" && !input.visible) {
+    ctx.font = `600 ${Math.max(13, 17 * U)}px ${CANVAS_FONT}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#f6f4f1";
+    ctx.fillText("손을 카메라 앞에", cx, cy - 11 * U);
+    ctx.fillText("들어 주세요", cx, cy + 13 * U);
+  } else {
+    // 두 점 사이 거리가 실제 엄지·검지 사이 거리를 따라간다
+    const sep = (1 - amount) * R * 0.62;
+    const ux = Math.SQRT1_2, uy = -Math.SQRT1_2;
+    const dots = [
+      { x: cx - ux * sep, y: cy - uy * sep, label: "엄지" },
+      { x: cx + ux * sep, y: cy + uy * sep, label: "검지" },
+    ];
+    ctx.font = `600 ${Math.max(12, 13 * U)}px ${CANVAS_FONT}`;
+    ctx.textBaseline = "middle";
+    for (const [k, d] of dots.entries()) {
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, 13 * U, 0, TAU);
+      ctx.fillStyle = input.pinching ? "#ffffff" : "rgba(255,255,255,0.92)";
+      ctx.fill();
+      if (sep > 30 * U) {
+        ctx.fillStyle = input.pinching ? "#2a2628" : "#f6f4f1";
+        ctx.textAlign = k === 0 ? "right" : "left";
+        ctx.fillText(d.label, d.x + (k === 0 ? -20 : 20) * U, d.y);
+      }
+    }
+  }
+  ctx.restore();
+}
+
+function drawRipples(now) {
+  for (let i = ripples.length - 1; i >= 0; i--) {
+    const r = ripples[i];
+    const t = (now - r.t0) / 480;
+    if (t >= 1) { ripples.splice(i, 1); continue; }
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(r.x, r.y, (12 + t * 52) * U, 0, TAU);
+    ctx.lineWidth = 3 * U * (1 - t);
+    ctx.strokeStyle = r.kind === "ok" ? `rgba(60,190,115,${1 - t})` : `rgba(255,255,255,${0.8 * (1 - t)})`;
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawCursor() {
+  const { x, y, amount, pinching } = input;
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,0.4)";
+  ctx.shadowBlur = 8 * U;
+  ctx.beginPath();
+  ctx.arc(x, y, (pinching ? 14 : 18) * U, 0, TAU);
+  ctx.lineWidth = 2.5 * U;
+  ctx.strokeStyle = "rgba(255,255,255,0.95)";
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(x, y, (3 + amount * 9) * U, 0, TAU);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawCamera() {
+  const cw = camView.width, ch = camView.height;
+  cctx.fillStyle = "#0d0c0d";
+  cctx.fillRect(0, 0, cw, ch);
+  if (S.mode !== "camera" || video.readyState < 2) {
+    cctx.fillStyle = "rgba(246,244,241,0.5)";
+    cctx.font = `600 22px ${CANVAS_FONT}`;
+    cctx.textAlign = "center";
+    cctx.textBaseline = "middle";
+    cctx.fillText(S.mode === "mouse" ? "마우스로 연습하는 중" : "카메라 꺼짐", cw / 2, ch / 2);
+    return;
+  }
+  const vw = video.videoWidth, vh = video.videoHeight;
+  const k = Math.max(cw / vw, ch / vh);
+  const ox = (cw - vw * k) / 2, oy = (ch - vh * k) / 2;
+  cctx.save();
+  cctx.translate(cw, 0);
+  cctx.scale(-1, 1);
+  cctx.drawImage(video, ox, oy, vw * k, vh * k);
+  // 손을 움직일 범위 (좌우 대칭이라 반전과 무관)
+  cctx.setLineDash([8, 6]);
+  cctx.lineWidth = 2;
+  cctx.strokeStyle = "rgba(255,255,255,0.45)";
+  cctx.strokeRect(ox + REACH.x0 * vw * k, oy + REACH.y0 * vh * k, (REACH.x1 - REACH.x0) * vw * k, (REACH.y1 - REACH.y0) * vh * k);
+  cctx.setLineDash([]);
+  if (latestHand) {
+    const P = (p) => [ox + p.x * vw * k, oy + p.y * vh * k];
+    cctx.strokeStyle = "rgba(255,255,255,0.55)";
+    cctx.lineWidth = 2;
+    cctx.beginPath();
+    for (const [a, b] of HAND_LINKS) {
+      cctx.moveTo(...P(latestHand[a]));
+      cctx.lineTo(...P(latestHand[b]));
+    }
+    cctx.stroke();
+    cctx.strokeStyle = input.pinching ? "#86e3a8" : "#ffd27a";
+    cctx.lineWidth = 4;
+    cctx.beginPath();
+    cctx.moveTo(...P(latestHand[4]));
+    cctx.lineTo(...P(latestHand[8]));
+    cctx.stroke();
+    cctx.fillStyle = input.pinching ? "#86e3a8" : "#ffffff";
+    for (const i of [4, 8]) {
+      cctx.beginPath();
+      cctx.arc(...P(latestHand[i]), 7, 0, TAU);
+      cctx.fill();
+    }
+  }
+  cctx.restore();
+}
+
+let lastStatus = "";
+function renderStatus() {
+  let kind = "", text = "카메라 꺼짐";
+  if (S.mode === "mouse") text = "마우스 모드";
+  else if (cameraStarting && !cameraReady) { kind = "warn"; text = "준비하는 중…"; }
+  else if (cameraReady && input.visible) { kind = "ok"; text = input.pinching ? "손가락 맞댐" : "손이 보여요"; }
+  else if (cameraReady) { kind = "warn"; text = "손이 안 보여요"; }
+  const key = kind + text;
+  if (key === lastStatus) return;
+  lastStatus = key;
+  $("camDot").className = `dot ${kind}`;
+  $("camText").textContent = text;
+  $("modeBtn").textContent = S.mode === "mouse" ? "카메라로 바꾸기" : "마우스로 바꾸기";
+}
+
+function updateHover() {
+  S.hover = null;
+  if (!input.visible || input.pinching || !acceptsInput()) return;
+  if (S.stage === "tap") {
+    const s = stainAt(input);
+    if (s && !S.selected.has(s.id)) S.hover = s.id;
+  } else if (S.stage === "drag") {
+    const s = handleAt(input);
+    if (s) S.hover = s.id;
+  }
+}
+
+function frame(now) {
+  if (W !== innerWidth || H !== innerHeight) layout();
+  if (S.mode === "camera") trackHand(now);
+  // 다음 사람이 바로 시작할 수 있게, 오래 손이 안 보이면 처음 화면으로
+  if (S.mode === "camera" && STAGES.includes(S.stage) && now - S.lastActivity > IDLE_RESET_MS) resetAll();
+  updateHover();
+  draw(now);
+  drawCamera();
+  renderStatus();
+  renderCard();
+  requestAnimationFrame(frame);
+}
+
+// ---------- 버튼 ----------
+function setMode(mode) {
+  if (S.mode === mode) return;
+  if (input.pinching) { input.pinching = false; pinchCancel(); }
+  S.mode = mode;
+  input.visible = false;
+  input.amount = 0;
+  document.body.classList.toggle("mouse", mode === "mouse");
+  lastCardKey = "";
+}
+
+$("startCam").addEventListener("click", async () => {
+  const btn = $("startCam");
+  const err = $("introError");
+  btn.disabled = true;
+  err.hidden = true;
+  try {
+    await initCamera((msg) => { btn.textContent = msg; });
+    setMode("camera");
+    beginPractice();
+  } catch (e) {
+    err.textContent = cameraErrorText(e);
+    err.hidden = false;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "카메라로 시작";
+  }
+});
+
+$("startMouse").addEventListener("click", () => {
+  setMode("mouse");
+  beginPractice();
+});
+
+$("modeBtn").addEventListener("click", async () => {
+  if (S.mode !== "mouse") return setMode("mouse");
+  try {
+    await initCamera(() => {});
+    setMode("camera");
+    S.lastActivity = performance.now();
+  } catch (e) {
+    say(cameraErrorText(e), "warn", 6000);
+  }
+});
+
+$("retryBtn").addEventListener("click", () => enterStage(S.stage));
+$("skipBtn").addEventListener("click", () => go(1));
+$("againBtn").addEventListener("click", beginPractice);
+
+addEventListener("keydown", (e) => {
+  if (e.key === "ArrowRight") go(1);
+  else if (e.key === "ArrowLeft") go(-1);
+  else if (e.key === "r" || e.key === "R") { if (STAGES.includes(S.stage)) enterStage(S.stage); }
+  else if (e.key === "Escape") resetAll();
+});
+addEventListener("resize", layout);
+
+layout();
+enterStage("intro");
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
