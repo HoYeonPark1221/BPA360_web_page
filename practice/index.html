@@ -411,7 +411,7 @@ const MODEL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/h
 // 손을 기울이거나 카메라 쪽으로 향해도 값이 크게 변하지 않는다.
 // 민감도 단계마다 이 값보다 가까우면 맞댄 것으로 본다. 1이 가장 둔하다.
 // 맥북 웹캠 실측: 맞댔을 때 대부분 0.5 아래, 폈을 때 0.7 위
-const PINCH_LEVELS = [0.38, 0.43, 0.48, 0.53, 0.58];
+const PINCH_LEVELS = [0.3, 0.35, 0.4, 0.45, 0.5];
 const DEFAULT_PINCH_LEVEL = 2;
 // 맞댄 뒤 이만큼 더 벌어져야 뗀 것으로 본다 (경계에서 깜빡이지 않게)
 const PINCH_RELEASE_GAP = 0.14;
@@ -1101,7 +1101,7 @@ const filterY = new OneEuro();
 let closeFrames = 0, openFrames = 0;
 let pinchLevel = DEFAULT_PINCH_LEVEL;
 try {
-  const stored = localStorage.getItem("pinchLevel4");
+  const stored = localStorage.getItem("pinchLevel5");
   const saved = stored === null ? NaN : Number(stored);
   if (Number.isInteger(saved) && saved >= 0 && saved < PINCH_LEVELS.length) pinchLevel = saved;
 } catch {}
@@ -1210,7 +1210,7 @@ function readHand(lm, world, now) {
 
 function setPinchLevel(level) {
   pinchLevel = clamp(level, 0, PINCH_LEVELS.length - 1);
-  try { localStorage.setItem("pinchLevel4", String(pinchLevel)); } catch {}
+  try { localStorage.setItem("pinchLevel5", String(pinchLevel)); } catch {}
   $("pinchLevel").textContent = `${pinchLevel + 1}/${PINCH_LEVELS.length}`;
 }
 
