@@ -173,14 +173,6 @@ button:disabled { opacity: 0.55; cursor: progress; }
 .chips .vbtn { font-size: 14px; padding: 8px 13px; }
 .win-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 
-.scroll-window { width: 380px; display: grid; gap: 10px; transform: translate(-50%, -50%); }
-.scroll-view { position: relative; height: 300px; overflow: hidden; border-radius: 18px; background: rgba(0, 0, 0, 0.14); }
-.scroll-content { display: grid; gap: 4px; padding: 6px; will-change: transform; }
-.row { justify-content: space-between; border-radius: 14px; padding: 12px 16px; background: transparent; font-size: 16px; }
-.row small { font-size: 12.5px; font-weight: 500; color: var(--ink-3); }
-.row.selected small { color: rgba(22, 20, 22, 0.6); }
-.scroll-bar { position: absolute; right: 4px; top: 0; width: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.45); }
-
 /* visionOS 창 아래 막대: 집어 끌면 창이 옮겨진다 */
 .winbar { width: 150px; height: 30px; padding: 0; background: transparent; transform: translateX(-50%); }
 .winbar::before { content: ""; width: 96px; height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.6); transition: width 0.15s, background 0.15s; }
@@ -276,15 +268,6 @@ button:disabled { opacity: 0.55; cursor: progress; }
         <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M10 30l3-9 14-14 6 6-14 14z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M10 30l9-3" stroke="currentColor" stroke-width="2"/></svg>
         <span>방향 펜</span>
       </div>
-    </div>
-  </div>
-
-  <div class="win scroll-window" id="scrollWin" hidden>
-    <h3>세부 유형</h3>
-    <p class="win-sub">목록을 위아래로 밀어서 찾아요</p>
-    <div class="scroll-view" id="scrollView">
-      <div class="scroll-content" id="scrollContent"></div>
-      <i class="scroll-bar" id="scrollBar"></i>
     </div>
   </div>
 
@@ -461,7 +444,7 @@ const CARD_H = 200;
 const ALIGN_TOLERANCE = (12 * Math.PI) / 180;
 
 const STAGES = ["pinch", "click", "cluster", "sticker", "axis", "string"];
-const GOAL = { pinch: 3, click: 4, cluster: 4, sticker: 4, axis: 4, string: 3 };
+const GOAL = { pinch: 3, click: 3, cluster: 4, sticker: 4, axis: 4, string: 3 };
 const TITLES = { pinch: "손가락 맞대기", click: "버튼 누르기", cluster: "그룹 만들기", sticker: "스티커 붙이고 돌리기", axis: "타원 맞추기", string: "줄 잇기" };
 const TOOLS = [
   { id: "grouping", label: "그룹화" },
@@ -476,9 +459,6 @@ const CATEGORIES = [
   { id: "regularMargin", label: "매끄러운 경계혈흔", patterns: ["형태전이혈흔", "흡수혈흔", "흐름혈흔", "고인혈흔"] },
   { id: "miscellaneous", label: "비분류혈흔", patterns: ["모세관작용혈흔", "윤곽혈흔", "공간혈흔", "이차튐혈흔", "곤충매개흔"] },
 ];
-// 스크롤 연습: 세부 유형 전체를 대분류 순서대로 늘어놓고 아래쪽 항목을 찾게 한다
-const SCROLL_ROWS = CATEGORIES.flatMap((c) => c.patterns.map((label) => ({ label, category: c.label })));
-const SCROLL_TARGET = "이차튐혈흔";
 // 타원 맞추기: 확대창 안 좌표(U 단위, 확대창 가운데가 0). 혈흔은 줄 잇기의 혈흔 1(폭 4.1 · 길이 8.6 mm)
 const AXIS_PANEL = { u: 0.42, v: 0.46, w: 560, h: 340 };
 const AXIS_STAIN = { x: 0, y: 0, a: 100, b: 48, deg: -160 };
@@ -497,8 +477,8 @@ const INFO = {
   click: {
     title: "버튼은 보고 맞대서 눌러요",
     ordered: false,
-    items: [["도구 바꾸기", "그룹화 · 스티커 · 방향 펜"], ["단계 넘기기", "다음 · 완료 · 다시하기"], ["고르기", "혈흔 유형, 스티커 색"], ["스크롤", "긴 목록은 맞댄 채 위아래로 밀어요"]],
-    tip: "손 대신 눈으로 가리켜요. 버튼을 바라보면 살짝 밝아지고, 그때 맞댔다 떼면 눌려요. 목록은 맞댄 채 손을 위아래로 움직이면 넘어가요.",
+    items: [["도구 바꾸기", "그룹화 · 스티커 · 방향 펜"], ["단계 넘기기", "다음 · 완료 · 다시하기"], ["고르기", "혈흔 유형, 스티커 색"]],
+    tip: "손 대신 눈으로 가리켜요. 버튼을 바라보면 살짝 밝아지고, 그때 맞댔다 떼면 눌려요.",
   },
   cluster: {
     title: "같은 방향성을 보이는 혈흔을 묶어 그룹을 만들어요",
@@ -579,7 +559,6 @@ const S = {
   toolSelected: null,
   cl: null,
   st: null,
-  sc: null, // 목록 스크롤
   ax: null, // 타원 (확대창 좌표)
   locked: new Set(),
   dragging: null,
@@ -594,7 +573,6 @@ function resetStageState() {
   S.toolSelected = null;
   S.cl = { step: "draw", drawing: null, rect: null, win: null, moving: null, category: null, pattern: null, created: false };
   S.st = { step: "place", dragging: false, placed: null, angle: 0, angleBeforeRotate: 0, handleAngle: -Math.PI / 4, rotating: false };
-  S.sc = { y: 0, vel: 0, drag: null, picked: null };
   S.ax = { cx: 36, cy: 28, a: 70, b: 70, th: 0, drag: null };
   S.locked = new Set();
   S.dragging = null;
@@ -647,10 +625,9 @@ function layout() {
     sizeStain(s);
   }
   wallTexture = W > 0 && H > 0 ? paintWall(wall.width, wall.height) : null;
-  for (const id of ["clickScene", "scrollWin"]) {
-    $(id).style.left = `${R.x + R.w / 2}px`;
-    $(id).style.top = `${R.y + R.h / 2}px`;
-  }
+  const scene = $("clickScene");
+  scene.style.left = `${R.x + R.w / 2}px`;
+  scene.style.top = `${R.y + R.h / 2}px`;
 }
 
 function paintWall(w, h) {
@@ -690,9 +667,6 @@ function hitUI(p) {
   for (let i = els.length - 1; i >= 0; i--) {
     const el = els[i];
     if (el.closest("[hidden]")) continue;
-    // 목록 밖으로 스크롤된 줄은 보이지 않으니 누를 수 없다
-    const view = el.closest(".scroll-view")?.getBoundingClientRect();
-    if (view && (p.x < view.left || p.x > view.right || p.y < view.top || p.y > view.bottom)) continue;
     const r = el.getBoundingClientRect();
     if (r.width && p.x >= r.left - pad && p.x <= r.right + pad && p.y >= r.top - pad && p.y <= r.bottom + pad) return el;
   }
@@ -713,14 +687,11 @@ function uiTap(hit) {
     if (value === want.id) {
       S.toolSelected = value;
       S.clickNext++;
-      say(S.clickNext >= TOOLS.length ? "좋아요! 이번엔 목록을 스크롤해서 찾아볼게요." : `‘${want.label}’ 버튼을 눌렀어요.`, "ok");
+      say(`‘${want.label}’ 버튼을 눌렀어요.`, "ok");
+      if (S.clickNext >= GOAL.click) complete();
     } else {
       say(`지금은 ‘${want.label}’ 버튼을 눌러 보세요.`, "warn");
     }
-  } else if (kind === "row") {
-    if (SCROLL_ROWS[Number(value)].label !== SCROLL_TARGET) return say(`‘${SCROLL_TARGET}’을 찾아 보세요. 목록 아래쪽에 있어요.`, "warn");
-    S.sc.picked = Number(value);
-    complete();
   } else if ((kind === "cat" || kind === "pat" || kind === "cls") && S.cl.step === "move") {
     say("먼저 창 아래 흰 막대를 집어 창을 옮겨 주세요.", "warn");
   } else if (kind === "cat") {
@@ -755,29 +726,6 @@ function uiTap(hit) {
     if (!axisFit().ok) return say("아직 타원이 혈흔과 안 맞아요. 몸통 테두리에 맞춰 보세요.", "warn");
     complete();
   }
-}
-
-// ---------- 목록 스크롤 ----------
-function scrollMax() {
-  return Math.max(0, $("scrollContent").offsetHeight - $("scrollView").clientHeight);
-}
-
-function updateScroll(dt) {
-  if (S.stage !== "click" || S.clickNext < TOOLS.length) return;
-  // 손을 놓은 뒤에도 조금 더 미끄러지다 멈춘다
-  if (!S.sc.drag && Math.abs(S.sc.vel) > 0.02) {
-    S.sc.y += S.sc.vel * dt;
-    S.sc.vel *= Math.pow(0.94, dt / 16.7);
-  }
-  const max = scrollMax();
-  S.sc.y = clamp(S.sc.y, 0, max);
-  if (S.sc.y === 0 || S.sc.y === max) S.sc.vel = 0;
-  $("scrollContent").style.transform = `translateY(${-S.sc.y}px)`;
-  const viewH = $("scrollView").clientHeight;
-  const barH = max ? Math.max(28, (viewH * viewH) / (viewH + max)) : 0;
-  const bar = $("scrollBar");
-  bar.style.height = `${barH}px`;
-  bar.style.transform = `translateY(${max ? (S.sc.y / max) * (viewH - barH) : 0}px)`;
 }
 
 // ---------- 타원 맞추기 ----------
@@ -884,17 +832,6 @@ function acceptsInput() {
 function pinchStart(p) {
   S.lastActivity = performance.now();
   if (!acceptsInput()) return;
-  if (S.stage === "click" && S.clickNext >= TOOLS.length) {
-    // 목록 위에서 맞대면, 움직이면 스크롤하고 그대로 떼면 그 줄을 누른다
-    const v = $("scrollView").getBoundingClientRect();
-    if (p.x >= v.left && p.x <= v.right && p.y >= v.top && p.y <= v.bottom) {
-      const row = hitUI(p);
-      S.sc.drag = { y0: p.y, s0: S.sc.y, moved: false, row, lastY: p.y, lastT: performance.now() };
-      S.sc.vel = 0;
-      row?.classList.add("pressed");
-      return;
-    }
-  }
   const el = hitUI(p);
   if (el) {
     const hit = el.dataset.hit;
@@ -912,7 +849,7 @@ function pinchStart(p) {
   switch (S.stage) {
     case "click":
       ripple(p.x, p.y, "miss");
-      say(S.clickNext >= TOOLS.length ? "목록 위에서 맞대 보세요." : "버튼 위에서 맞대 보세요.", "warn");
+      say("버튼 위에서 맞대 보세요.", "warn");
       break;
     case "cluster":
       if (S.cl.step === "draw") S.cl.drawing = { x0: p.x, y0: p.y, x1: p.x, y1: p.y };
@@ -969,21 +906,6 @@ function grabTile(type) {
 }
 
 function pinchMove(p) {
-  if (S.sc?.drag) {
-    const d = S.sc.drag;
-    const now = performance.now();
-    if (!d.moved && Math.abs(p.y - d.y0) > 10) {
-      d.moved = true;
-      d.row?.classList.remove("pressed");
-    }
-    if (d.moved) {
-      // 손을 올리면 목록도 따라 올라가 아래 항목이 나온다
-      S.sc.y = clamp(d.s0 - (p.y - d.y0), 0, scrollMax());
-      S.sc.vel = -(p.y - d.lastY) / Math.max(now - d.lastT, 1);
-    }
-    d.lastY = p.y;
-    d.lastT = now;
-  }
   if (S.cl?.moving) {
     const m = S.cl.moving;
     S.cl.win = { x: m.w0.x + p.x - m.p0.x, y: m.w0.y + p.y - m.p0.y };
@@ -1003,13 +925,6 @@ function pinchMove(p) {
 
 function pinchEnd(p) {
   S.lastActivity = performance.now();
-  if (S.sc?.drag) {
-    const d = S.sc.drag;
-    S.sc.drag = null;
-    d.row?.classList.remove("pressed");
-    if (!d.moved && d.row && acceptsInput()) uiTap(d.row.dataset.hit);
-    return;
-  }
   if (S.cl?.moving) {
     S.cl.moving = null;
     $("classBar").classList.remove("pressed");
@@ -1094,7 +1009,6 @@ function pinchCancel() {
   if (S.cl?.drawing) { S.cl.drawing = null; lost("그리기를 멈췄어요"); }
   if (S.st?.dragging) { S.st.dragging = false; lost("스티커를 놓쳤어요"); }
   if (S.st?.rotating) S.st.rotating = false;
-  if (S.sc?.drag) { S.sc.drag.row?.classList.remove("pressed"); S.sc.drag = null; }
   if (S.cl?.moving) { S.cl.moving = null; $("classBar").classList.remove("pressed"); }
   if (S.ax?.drag) S.ax.drag = null;
 }
@@ -1164,7 +1078,7 @@ function beginPractice() {
 function progress() {
   switch (S.stage) {
     case "pinch": return S.pinchCount;
-    case "click": return S.clickNext + (S.sc.picked != null ? 1 : 0);
+    case "click": return S.clickNext;
     case "cluster": return (S.cl.rect ? 1 : 0) + (S.cl.step === "classify" || S.cl.step === "done" ? 1 : 0) + (S.cl.category ? 1 : 0) + (S.cl.created ? 1 : 0);
     case "axis": return axisFit().count;
     case "sticker": return { place: 0, select: 1, rotateBtn: 2, rotate: 3, done: 4 }[S.st.step];
@@ -1179,7 +1093,6 @@ function instruction() {
     case "pinch":
       return byMode("엄지와 검지 끝을 가볍게 맞댔다가 떼세요. 3번 해 볼게요.", "클릭이 손가락 맞대기를 대신해요. 아무 곳이나 3번 클릭해 보세요.");
     case "click": {
-      if (S.clickNext >= TOOLS.length) return byMode(`목록을 집은 채로 손을 위로 올리면 아래 항목이 나와요. ‘${SCROLL_TARGET}’을 찾아 맞댔다 떼세요.`, `목록을 누른 채 위로 끌거나 휠을 굴려 내리고, ‘${SCROLL_TARGET}’을 찾아 클릭하세요.`);
       const t = TOOLS[Math.min(S.clickNext, TOOLS.length - 1)];
       return byMode(`빛나는 ‘${t.label}’ 버튼을 가리켜 밝아지면 맞댔다 떼세요. 도구 3개를 차례로 눌러요.`, `빛나는 ‘${t.label}’ 버튼을 클릭하세요. 도구 3개를 차례로 눌러요.`);
     }
@@ -1247,9 +1160,7 @@ function renderCard() {
 function syncUI() {
   const st = S.stage;
   const live = !S.transitioning;
-  const scrolling = st === "click" && S.clickNext >= TOOLS.length;
-  $("clickScene").hidden = st !== "click" || scrolling;
-  $("scrollWin").hidden = !scrolling;
+  $("clickScene").hidden = st !== "click";
   const classWin = $("classWindow");
   classWin.hidden = !(st === "cluster" && (S.cl.step === "move" || S.cl.step === "classify"));
   $("classBar").hidden = classWin.hidden;
@@ -1263,13 +1174,6 @@ function syncUI() {
     const id = el.dataset.hit.slice(5);
     el.classList.toggle("selected", S.toolSelected === id);
     el.classList.toggle("target", st === "click" && live && TOOLS[S.clickNext]?.id === id);
-  }
-  if (scrolling) {
-    for (const el of uiRoot.querySelectorAll("[data-hit^='row:']")) {
-      const i = Number(el.dataset.hit.slice(4));
-      el.classList.toggle("selected", S.sc.picked === i);
-      el.classList.toggle("target", SCROLL_ROWS[i].label === SCROLL_TARGET && S.sc.picked == null);
-    }
   }
   if (st === "axis") {
     const ok = axisFit().ok;
@@ -1500,12 +1404,7 @@ wall.addEventListener("pointercancel", mouseUp);
 wall.addEventListener("pointerleave", () => {
   if (S.mode === "mouse" && !input.pinching) input.visible = false;
 });
-wall.addEventListener("wheel", (e) => {
-  if (S.mode !== "mouse" || S.stage !== "click" || S.clickNext < TOOLS.length) return;
-  e.preventDefault();
-  S.sc.vel = 0;
-  S.sc.y = clamp(S.sc.y + e.deltaY, 0, scrollMax());
-}, { passive: false });
+
 
 // ---------- 벽 그리기 ----------
 function draw(now) {
@@ -2006,17 +1905,13 @@ function renderPointer() {
   if (!ghostEl.hidden) ghostEl.style.transform = `translate(${input.x}px, ${input.y}px)`;
 }
 
-let lastFrameAt = 0;
 function frame(now) {
-  const dt = Math.min(lastFrameAt ? now - lastFrameAt : 16.7, 50);
-  lastFrameAt = now;
   if (W !== innerWidth || H !== innerHeight) layout();
   if (S.mode === "camera") trackHand(now);
   // 다음 사람이 바로 시작할 수 있게, 오래 손이 안 보이면 처음 화면으로
   if (S.mode === "camera" && STAGES.includes(S.stage) && now - S.lastActivity > IDLE_RESET_MS) enterStage("intro");
   updateHover();
   syncUI();
-  updateScroll(dt);
   draw(now);
   renderPointer();
   drawCamera();
@@ -2082,7 +1977,6 @@ addEventListener("keydown", (e) => {
 });
 addEventListener("resize", layout);
 
-$("scrollContent").innerHTML = SCROLL_ROWS.map((r, i) => `<div class="vbtn row" data-hit="row:${i}"><span>${r.label}</span><small>${r.category}</small></div>`).join("");
 $("catChips").innerHTML = CATEGORIES.map((c) => `<div class="vbtn" data-hit="cat:${c.id}">${c.label}</div>`).join("");
 resetStageState();
 layout();
