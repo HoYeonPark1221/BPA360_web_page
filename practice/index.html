@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>손동작 연습</title>
 <style>
-/* 레이아웃: 현장 벽(캔버스)을 화면 가득 깔고, visionOS 유리 패널을 위(단계)·오른쪽 위(카메라)·아래(안내)에 띄운다 */
+/* 레이아웃: 현장 벽(캔버스)을 화면 가득 깔고 visionOS 유리 창을 띄운다.
+   위 = 단계, 왼쪽 = BPA 360에서 하는 일, 오른쪽 위 = 카메라, 아래 = 지금 할 일, 그 사이 = 연습 장면 */
 :root {
   --room: #191614;
   --glass: rgba(34, 31, 34, 0.6);
@@ -15,6 +16,7 @@
   --ink-2: rgba(246, 244, 241, 0.74);
   --ink-3: rgba(246, 244, 241, 0.5);
   --focus: #9fd8ff;
+  --tool: #8cc8ff;
   --ok: #86e3a8;
   --warn: #ffd27a;
   --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
@@ -32,11 +34,11 @@ body {
   user-select: none;
 }
 [hidden] { display: none !important; }
-#wall { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+#wall { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; z-index: 0; }
 body.mouse #wall { cursor: none; }
 #video { position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 
-.glass {
+.glass, .win {
   background: var(--glass);
   border: 1px solid var(--edge);
   -webkit-backdrop-filter: blur(28px) saturate(1.5);
@@ -46,7 +48,7 @@ body.mouse #wall { cursor: none; }
 
 /* 단계 표시 */
 .steps {
-  position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+  position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2;
   display: flex; gap: 4px; margin: 0; padding: 6px; list-style: none; border-radius: 999px;
 }
 .steps li {
@@ -63,9 +65,28 @@ body.mouse #wall { cursor: none; }
 .steps li.done { color: var(--ink-2); }
 .steps li.done .n { background: var(--ok); border-color: var(--ok); color: #10301c; }
 
+/* BPA 360에서 하는 일 */
+.info {
+  position: fixed; left: 20px; top: 84px; width: 300px; z-index: 2;
+  padding: 22px 22px 20px; border-radius: 28px; display: grid; gap: 12px;
+  pointer-events: none;
+}
+.chip-label {
+  justify-self: start; font-size: 12.5px; font-weight: 700;
+  padding: 3px 10px; border-radius: 999px;
+}
+.info .chip-label { color: var(--ok); background: rgba(134, 227, 168, 0.14); }
+.info h2 { margin: 0; font-family: var(--display); font-size: 22px; line-height: 1.35; font-weight: 700; text-wrap: balance; }
+.info ol, .info ul { margin: 0; padding-left: 20px; display: grid; gap: 10px; font-size: 15px; line-height: 1.45; color: var(--ink-2); }
+.info li::marker { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.info li b { display: block; color: var(--ink); font-size: 15.5px; }
+.info-tip { display: grid; gap: 6px; padding-top: 12px; border-top: 1px solid var(--edge); }
+.info-tip .chip-label { color: var(--focus); background: rgba(159, 216, 255, 0.14); }
+.info-tip p { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--ink-2); }
+
 /* 카메라 */
 .cam {
-  position: fixed; top: 20px; right: 20px; width: 260px;
+  position: fixed; top: 20px; right: 20px; width: 260px; z-index: 2;
   padding: 10px; border-radius: 24px; display: grid; gap: 8px;
 }
 #camView { width: 100%; aspect-ratio: 16 / 9; border-radius: 16px; background: #0d0c0d; display: block; }
@@ -78,32 +99,27 @@ body.mouse #wall { cursor: none; }
 .keys { margin: 0; padding: 0 4px 2px; font-size: 11.5px; color: var(--ink-3); line-height: 1.5; }
 .keys kbd { font-family: inherit; padding: 0 5px; border-radius: 5px; border: 1px solid var(--edge); }
 
-/* 안내 카드 */
+/* 지금 할 일 */
 .card {
-  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
-  width: min(780px, calc(100% - 32px));
-  padding: 22px 28px 20px; border-radius: 30px;
-  display: grid; gap: 8px;
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 2;
+  width: min(780px, calc(100% - 32px)); min-height: 200px;
+  padding: 20px 28px 18px; border-radius: 30px;
+  display: grid; gap: 6px; align-content: start;
 }
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .eyebrow { margin: 0; font-size: 13.5px; font-weight: 600; letter-spacing: 0.04em; color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .pips { display: flex; gap: 6px; }
 .pips i { width: 26px; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.16); transition: background 0.25s; }
 .pips i.on { background: var(--ok); }
-.card h1 { margin: 0; font-family: var(--display); font-size: 30px; font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
-.card .body { margin: 0; font-size: 20px; line-height: 1.5; color: var(--ink); text-wrap: pretty; }
-.tip { margin: 2px 0 0; font-size: 15.5px; line-height: 1.55; color: var(--ink-2); display: flex; gap: 10px; align-items: baseline; }
-.tip-label {
-  flex: none; font-size: 12.5px; font-weight: 700; color: var(--focus);
-  padding: 2px 9px; border-radius: 999px; background: rgba(159, 216, 255, 0.14);
-}
-.card-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; margin-top: 4px; }
+.card h1 { margin: 0; font-family: var(--display); font-size: 28px; font-weight: 700; letter-spacing: -0.01em; }
+.card .body { margin: 0; font-size: 19px; line-height: 1.45; color: var(--ink); text-wrap: pretty; min-height: 2.9em; }
+.card-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; }
 .feedback { font-size: 16px; font-weight: 600; color: var(--ink-2); min-width: 0; }
 .feedback.ok { color: var(--ok); }
 .feedback.warn { color: var(--warn); }
 .card-actions { display: flex; gap: 8px; flex: none; }
 
-/* 버튼 */
+/* 운영자용 버튼 (마우스로 누름) */
 button {
   font: inherit; border: 0; cursor: pointer; border-radius: 999px;
   transition: background 0.2s, transform 0.15s, opacity 0.2s;
@@ -117,9 +133,76 @@ button:disabled { opacity: 0.55; cursor: progress; }
 .ghost:hover:not(:disabled) { background: rgba(255, 255, 255, 0.2); }
 .small { font-size: 12.5px; padding: 6px 12px; flex: none; }
 
+/* 연습 장면의 창 (손 커서로 누름) */
+#ui { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
+#ui > * { position: absolute; }
+.win { border-radius: 28px; padding: 20px; color: var(--ink); }
+.win h3 { margin: 0; font-family: var(--display); font-size: 20px; font-weight: 700; }
+.win p { margin: 0; font-size: 15px; line-height: 1.5; color: var(--ink-2); }
+.vbtn {
+  position: relative; display: flex; align-items: center; justify-content: center; gap: 8px;
+  border-radius: 999px; padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.1); color: var(--ink);
+  font-size: 15px; font-weight: 600; white-space: nowrap;
+  transition: transform 0.15s, background 0.15s, box-shadow 0.15s, opacity 0.2s;
+}
+.vbtn svg { flex: none; }
+.vbtn.hover { background: rgba(255, 255, 255, 0.26); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.3), 0 0 22px rgba(255, 255, 255, 0.28); transform: scale(1.05); }
+.vbtn.pressed { background: rgba(255, 255, 255, 0.36); transform: scale(0.95); }
+.vbtn.selected { background: var(--ink); color: #161416; }
+.vbtn.disabled { opacity: 0.38; }
+.vbtn.target::after {
+  content: ""; position: absolute; inset: -6px; border-radius: inherit;
+  border: 2px solid var(--focus); animation: pulse 1.4s ease-in-out infinite;
+}
+@keyframes pulse { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+
+.click-scene { display: grid; justify-items: center; gap: 36px; transform: translate(-50%, -50%); }
+.tw-head { width: min(560px, 46vw); padding: 24px 26px; display: grid; gap: 8px; }
+.toolbar { display: flex; align-items: center; gap: 16px; padding: 12px 22px; border-radius: 999px; }
+.toolbar .sep { width: 1px; height: 48px; background: var(--edge); }
+.tool { flex-direction: column; gap: 6px; min-width: 92px; padding: 10px 14px; border-radius: 18px; background: transparent; font-size: 13.5px; }
+.tool svg { width: 40px; height: 40px; }
+.tool.selected { background: rgba(140, 200, 255, 0.2); color: var(--tool); }
+
+.class-window { width: 400px; display: grid; gap: 12px; }
+.win-sub { font-size: 13px !important; font-weight: 600; color: var(--ink-3) !important; }
+.chips { display: flex; flex-wrap: wrap; align-content: flex-start; gap: 8px; min-height: 38px; }
+/* 세부 유형이 바뀌어도 창 높이가 그대로여야 손 커서 아래 버튼이 움직이지 않는다 */
+#patChips { min-height: 84px; }
+.chips .vbtn { font-size: 14px; padding: 8px 13px; }
+.win-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+
+.sticker-panel { width: 300px; display: grid; gap: 12px; }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tile { flex-direction: column; gap: 8px; padding: 16px 8px 12px; border-radius: 20px; background: rgba(255, 255, 255, 0.08); font-size: 13px; }
+.tile svg { width: 76px; height: 40px; }
+
+.edit-bar { display: flex; gap: 6px; padding: 8px; border-radius: 999px; transform: translateX(-50%); }
+.ibtn { flex-direction: column; gap: 3px; padding: 8px 12px; border-radius: 22px; background: transparent; font-size: 12px; }
+.ibtn svg { width: 24px; height: 24px; }
+.rotate-bar { display: flex; gap: 18px; transform: translateX(-50%); }
+.cbtn { width: 56px; height: 56px; padding: 0; border-radius: 50%; background: var(--glass); border: 1px solid var(--edge); -webkit-backdrop-filter: blur(28px); backdrop-filter: blur(28px); }
+.cbtn svg { width: 26px; height: 26px; }
+
+#ghost { position: fixed; left: 0; top: 0; z-index: 3; width: 110px; height: 56px; margin: -28px 0 0 -55px; pointer-events: none; filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.35)); }
+#cursor { position: fixed; left: 0; top: 0; z-index: 4; width: 40px; height: 40px; margin: -20px 0 0 -20px; pointer-events: none; --amt: 0; }
+#cursor::before {
+  content: ""; position: absolute; inset: 2px; border-radius: 50%;
+  border: 2.5px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.4), inset 0 0 6px rgba(0, 0, 0, 0.2);
+  transition: transform 0.12s;
+}
+#cursor::after {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px;
+  border-radius: 50%; background: #fff; box-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
+  transform: scale(calc(0.25 + var(--amt) * 0.75));
+}
+#cursor.pinching::before { transform: scale(0.8); }
+
 /* 시작·완료 화면 */
 .overlay {
-  position: fixed; inset: 0; display: grid; place-items: center; padding: 24px;
+  position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 24px;
   background: rgba(12, 10, 10, 0.42);
 }
 .panel {
@@ -135,14 +218,16 @@ button:disabled { opacity: 0.55; cursor: progress; }
 .error { margin: 0; font-size: 15.5px; line-height: 1.5; color: var(--warn); }
 .fine { margin: 0; font-size: 13.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
 
-@media (max-width: 900px) {
+@media (max-width: 1180px) {
+  .info { width: 250px; padding: 18px; }
+  .info h2 { font-size: 19px; }
   .steps li { padding: 6px 10px 6px 6px; font-size: 13px; }
-  .cam { width: 200px; }
+  .cam { width: 220px; }
   .card h1 { font-size: 24px; }
   .card .body { font-size: 17px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; }
+  * { transition: none !important; animation: none !important; }
 }
 </style>
 </head>
@@ -150,14 +235,118 @@ button:disabled { opacity: 0.55; cursor: progress; }
 <canvas id="wall"></canvas>
 <video id="video" playsinline muted></video>
 
+<div id="ui">
+  <div class="click-scene" id="clickScene" hidden>
+    <div class="win tw-head">
+      <h3>개별혈흔 표시 및 그룹화</h3>
+      <p>주요 혈흔에 방향 스티커와 측정자를 부착하고, 필요한 경우 방향 펜으로 방향성을 표시하세요.</p>
+      <p>이후 동일한 방향성을 보이는 혈흔을 선택하여 그룹을 생성하세요.</p>
+    </div>
+    <div class="win toolbar">
+      <div class="vbtn tool" data-hit="tool:grouping">
+        <svg viewBox="0 0 40 40" aria-hidden="true"><rect x="6" y="9" width="28" height="22" rx="3" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 3"/><circle cx="14" cy="17" r="2.6" fill="currentColor"/><circle cx="24" cy="21" r="2.6" fill="currentColor"/><circle cx="17" cy="25" r="2" fill="currentColor"/></svg>
+        <span>그룹화</span>
+      </div>
+      <i class="sep"></i>
+      <div class="vbtn tool" data-hit="tool:sticker">
+        <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M7 20h18" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M22 11l11 9-11 9z" fill="currentColor"/></svg>
+        <span>스티커</span>
+      </div>
+      <i class="sep"></i>
+      <div class="vbtn tool" data-hit="tool:pen">
+        <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M10 30l3-9 14-14 6 6-14 14z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M10 30l9-3" stroke="currentColor" stroke-width="2"/></svg>
+        <span>방향 펜</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="win class-window" id="classWindow" hidden>
+    <h3>혈흔 유형 분류</h3>
+    <p class="win-sub">대분류</p>
+    <div class="chips" id="catChips"></div>
+    <p class="win-sub">세부 유형 · 고르지 않아도 돼요</p>
+    <div class="chips" id="patChips"></div>
+    <div class="win-actions">
+      <div class="vbtn" data-hit="cls:back">이전으로</div>
+      <div class="vbtn" data-hit="cls:create" id="createBtn">그룹 생성</div>
+    </div>
+  </div>
+
+  <div class="win sticker-panel" id="stickerPanel" hidden>
+    <h3>스티커</h3>
+    <div class="tiles">
+      <div class="vbtn tile" data-hit="tile:arrow" id="arrowTile">
+        <svg viewBox="0 0 80 40" aria-hidden="true"><path d="M8 20h42" stroke="currentColor" stroke-width="7" stroke-linecap="round"/><path d="M46 7l26 13-26 13z" fill="currentColor"/></svg>
+        <span>방향 화살표</span>
+      </div>
+      <div class="vbtn tile" data-hit="tile:directionRuler">
+        <svg viewBox="0 0 80 40" aria-hidden="true"><g transform="rotate(-31 40 20)"><rect x="8" y="14" width="64" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 14v6M24 14v4M32 14v6M40 14v4M48 14v6M56 14v4M64 14v6" stroke="currentColor" stroke-width="1.5"/></g></svg>
+        <span>혈흔 방향자</span>
+      </div>
+      <div class="vbtn tile" data-hit="tile:ruler2cm">
+        <svg viewBox="0 0 80 40" aria-hidden="true"><path d="M12 6v26h58" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M22 32v-6M32 32v-4M42 32v-6M52 32v-4M62 32v-6M12 16h5M12 23h4" stroke="currentColor" stroke-width="1.5"/></svg>
+        <span>혈흔 자</span>
+      </div>
+      <div class="vbtn tile" data-hit="tile:ruler5cm">
+        <svg viewBox="0 0 80 40" aria-hidden="true"><rect x="6" y="12" width="68" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 12v8M19 12v5M26 12v8M33 12v5M40 12v8M47 12v5M54 12v8M61 12v5M68 12v8" stroke="currentColor" stroke-width="1.5"/></svg>
+        <span>5cm 자</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="win edit-bar" id="editBar" hidden>
+    <div class="vbtn ibtn" data-hit="edit:move">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span>이동</span>
+    </div>
+    <div class="vbtn ibtn" data-hit="edit:rotate" id="rotateBtn">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12a7 7 0 1 1-2.05-4.95" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M19 4v4.5h-4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>회전</span>
+    </div>
+    <div class="vbtn ibtn" data-hit="edit:color">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="8.5" cy="10" r="1.6" fill="currentColor"/><circle cx="12.5" cy="7.5" r="1.6" fill="currentColor"/><circle cx="15.8" cy="11" r="1.6" fill="currentColor"/></svg>
+      <span>색</span>
+    </div>
+    <div class="vbtn ibtn" data-hit="edit:delete">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V5h4v2M7 7l1 13h8l1-13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>삭제</span>
+    </div>
+  </div>
+
+  <div class="rotate-bar" id="rotateBar" hidden>
+    <div class="vbtn cbtn" data-hit="rot:cancel">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+    </div>
+    <div class="vbtn cbtn" data-hit="rot:confirm" id="confirmBtn">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
+</div>
+
+<div id="ghost" hidden>
+  <svg viewBox="0 0 80 40" width="110" height="56" aria-hidden="true"><path d="M8 20h42" stroke="#fff" stroke-width="7" stroke-linecap="round"/><path d="M46 7l26 13-26 13z" fill="#fff"/></svg>
+</div>
+<div id="cursor" hidden></div>
+
 <ol class="steps glass" id="steps">
   <li data-stage="pinch"><span class="n">1</span>맞대기</li>
-  <li data-stage="tap"><span class="n">2</span>보고 집기</li>
-  <li data-stage="drag"><span class="n">3</span>집고 끌기</li>
-  <li data-stage="draw"><span class="n">4</span>가리켜 그리기</li>
+  <li data-stage="click"><span class="n">2</span>누르기</li>
+  <li data-stage="cluster"><span class="n">3</span>그룹 만들기</li>
+  <li data-stage="sticker"><span class="n">4</span>스티커</li>
+  <li data-stage="string"><span class="n">5</span>줄 잇기</li>
 </ol>
 
-<aside class="cam glass">
+<aside class="info glass" id="info" hidden>
+  <span class="chip-label">BPA 360에서는</span>
+  <h2 id="infoTitle"></h2>
+  <div id="infoList"></div>
+  <div class="info-tip">
+    <span class="chip-label">Vision Pro에서는</span>
+    <p id="infoTip"></p>
+  </div>
+</aside>
+
+<aside class="cam glass" id="cam">
   <canvas id="camView" width="480" height="270"></canvas>
   <div class="cam-row">
     <div class="cam-status"><span class="dot" id="camDot"></span><span id="camText">카메라 꺼짐</span></div>
@@ -168,12 +357,11 @@ button:disabled { opacity: 0.55; cursor: progress; }
 
 <section class="card glass" id="card" hidden>
   <div class="card-head">
-    <p class="eyebrow" id="cardStep">1 / 4</p>
+    <p class="eyebrow" id="cardStep">1 / 5</p>
     <div class="pips" id="pips"></div>
   </div>
   <h1 id="cardTitle"></h1>
   <p class="body" id="cardBody"></p>
-  <p class="tip"><span class="tip-label">Vision Pro에서는</span><span id="cardTip"></span></p>
   <div class="card-foot">
     <div class="feedback" id="feedback" aria-live="polite"></div>
     <div class="card-actions">
@@ -186,8 +374,8 @@ button:disabled { opacity: 0.55; cursor: progress; }
 <div class="overlay" id="intro">
   <div class="panel">
     <p class="eyebrow">BPA 360 · 체험 전 연습</p>
-    <h2>Vision Pro를 쓰기 전에<br>손동작 4가지를 연습해 봐요</h2>
-    <p class="lead">앱에서 하는 순서 그대로 혈흔을 고르고, 줄을 이어, 수렴 영역을 그려요. 1~2분이면 끝나요.</p>
+    <h2>Vision Pro를 쓰기 전에<br>손동작 5가지를 연습해 봐요</h2>
+    <p class="lead">앱에서 하는 그대로 버튼을 누르고, 혈흔을 묶고, 스티커를 붙이고, 줄을 이어요. 2~3분이면 끝나요.</p>
     <ul class="howto">
       <li><b>오른손을 카메라 앞에</b> 들어 주세요. 오른쪽 위 화면에 손이 보이면 준비 끝이에요.</li>
       <li>엄지와 검지 사이의 <b>흰 원</b>이 손을 따라다니는 커서예요.</li>
@@ -206,9 +394,9 @@ button:disabled { opacity: 0.55; cursor: progress; }
     <h2>준비됐어요</h2>
     <p class="lead">Vision Pro를 쓰면 이것만 기억하세요.</p>
     <ol class="recap">
-      <li><b>보고, 맞대기.</b> 고를 것을 바라본 다음 엄지와 검지를 맞대요.</li>
+      <li><b>보고, 맞대기.</b> 버튼과 혈흔은 바라본 다음 엄지와 검지를 맞대요.</li>
       <li><b>손은 편하게.</b> 무릎 위나 몸 옆에 내려 둬도 기기가 알아봐요.</li>
-      <li><b>벽에 그릴 땐 손으로 가리키기.</b> 오른팔을 벽 쪽으로 뻗어요.</li>
+      <li><b>벽에 그리거나 붙일 땐 오른손으로.</b> 사각형과 스티커는 오른손이 가리키는 곳에 놓여요.</li>
     </ol>
     <div class="actions"><button id="againBtn" class="primary" type="button">다음 분 시작</button></div>
     <p class="fine" id="autoReset"></p>
@@ -230,42 +418,77 @@ const PINCH_LOOKBACK_MS = 90;
 const HAND_LOST_MS = 250;
 const IDLE_RESET_MS = 45000;
 const DONE_RESET_S = 25;
+// 아래 안내 카드 높이 (연습 장면은 이 위에 놓는다)
+const CARD_H = 200;
+// 스티커 방향이 이 각도 안이면 맞았다고 본다
+const ALIGN_TOLERANCE = (12 * Math.PI) / 180;
 
-const STAGES = ["pinch", "tap", "drag", "draw"];
-const GOAL = { pinch: 3, tap: 3, drag: 3, draw: 1 };
-const COPY = {
+const STAGES = ["pinch", "click", "cluster", "sticker", "string"];
+const GOAL = { pinch: 3, click: 3, cluster: 3, sticker: 4, string: 3 };
+const TITLES = { pinch: "손가락 맞대기", click: "버튼 누르기", cluster: "그룹 만들기", sticker: "스티커 붙이고 돌리기", string: "줄 잇기" };
+const TOOLS = [
+  { id: "grouping", label: "그룹화" },
+  { id: "sticker", label: "스티커" },
+  { id: "pen", label: "방향 펜" },
+];
+// 앱의 BloodstainCategory·BloodstainPattern 표시 이름
+const CATEGORIES = [
+  { id: "linearSpatter", label: "선형비산혈흔", patterns: ["선상분출혈흔", "휘두름이탈혈흔", "낙하연결혈흔"] },
+  { id: "nonlinearSpatter", label: "비선형비산혈흔", patterns: ["충격비산혈흔", "호기혈흔", "낙하혈흔", "정지이탈혈흔"] },
+  { id: "irregularMargin", label: "불규칙적 경계혈흔", patterns: ["누적혈흔", "다량분출/다량유출혈흔", "문지름혈흔"] },
+  { id: "regularMargin", label: "매끄러운 경계혈흔", patterns: ["형태전이혈흔", "흡수혈흔", "흐름혈흔", "고인혈흔"] },
+  { id: "miscellaneous", label: "비분류혈흔", patterns: ["모세관작용혈흔", "윤곽혈흔", "공간혈흔", "이차튐혈흔", "곤충매개흔"] },
+];
+// 왼쪽 창: 이 손동작으로 앱에서 무엇을 하는지
+const INFO = {
   pinch: {
-    title: "손가락 맞대기",
-    camera: "엄지와 검지 끝을 가볍게 맞댔다가 떼세요. 3번 해 볼게요.",
-    mouse: "클릭이 손가락 맞대기를 대신해요. 아무 곳이나 3번 클릭해 보세요.",
+    title: "핀치 하나로 거의 모든 걸 해요",
+    ordered: false,
+    items: [["버튼 누르기", "도구 바꾸기, 다음, 완료"], ["그룹 만들기", "같은 방향 혈흔을 사각형으로 묶기"], ["스티커", "방향 스티커와 측정자를 붙이고 돌리기"], ["줄 연결법", "혈흔에서 줄을 당겨 긋기"]],
     tip: "손을 무릎 위나 몸 옆에 내려 둔 채로 맞대도 알아봐요. 허공을 누를 필요는 없어요.",
   },
-  tap: {
-    title: "보고 집기",
-    camera: "혈흔을 가리켜 밝아지면 손가락을 맞대 고르세요. 혈흔 3개를 골라요.",
-    mouse: "혈흔 위에 마우스를 올려 밝아지면 클릭해 고르세요. 혈흔 3개를 골라요.",
-    tip: "손 대신 눈으로 가리켜요. 혈흔을 바라보면 밝아지고, 그때 손가락을 맞대면 골라져요.",
+  click: {
+    title: "버튼은 보고 맞대서 눌러요",
+    ordered: false,
+    items: [["도구 바꾸기", "그룹화 · 스티커 · 방향 펜"], ["단계 넘기기", "다음 · 완료 · 다시하기"], ["고르기", "혈흔 유형, 스티커 색"]],
+    tip: "손 대신 눈으로 가리켜요. 버튼을 바라보면 살짝 밝아지고, 그때 맞댔다 떼면 눌려요.",
   },
-  drag: {
-    title: "집고 끌기",
-    camera: "혈흔 가운데 흰 점을 집은 채로 손을 옮겨, 점선 원 안에서 떼세요. 줄 3개를 이어요.",
-    mouse: "혈흔 가운데 흰 점을 누른 채로 끌어, 점선 원 안에서 놓으세요. 줄 3개를 이어요.",
-    tip: "흰 점을 보고 맞댄 다음, 맞댄 채로 손을 옮기면 줄이 따라와요. 떼면 그 자리에 놓여요.",
+  cluster: {
+    title: "같은 방향성을 보이는 혈흔을 묶어 그룹을 만들어요",
+    ordered: true,
+    items: [["그룹화 도구", "아래 도구 막대에서 ‘그룹화’를 눌러요"], ["사각형 그리기", "묶을 혈흔들을 사각형으로 감싸요"], ["유형 고르기", "창에서 혈흔 유형을 고르고 ‘그룹 생성’을 눌러요"]],
+    tip: "사각형은 눈이 아니라 오른손이 가리키는 곳에 그려져요. 팔을 벽 쪽으로 편하게 뻗어 보세요.",
   },
-  draw: {
-    title: "가리켜 그리기",
-    camera: "줄이 모이는 곳을 감싸도록, 손가락을 맞댄 채 대각선으로 움직여 사각형을 그리세요.",
-    mouse: "줄이 모이는 곳을 감싸도록, 누른 채로 대각선으로 끌어 사각형을 그리세요.",
-    tip: "이 단계는 눈이 아니라 오른손이 가리키는 곳에 그려져요. 팔을 벽 쪽으로 편하게 뻗어 보세요.",
+  sticker: {
+    title: "혈흔 옆에 방향 스티커와 측정자를 붙여요",
+    ordered: true,
+    items: [["붙이기", "스티커 창에서 집어 벽으로 끌어 와요"], ["고르기", "붙인 스티커를 고르면 이동 · 회전 · 색 · 삭제가 나와요"], ["돌리기", "링 위 손잡이를 돌려 방향을 맞추고 ✓로 확정해요"]],
+    tip: "끌어 온 스티커는 오른손이 가리키는 벽 위치에 붙어요.",
+  },
+  string: {
+    title: "줄 연결법으로 혈흔이 시작된 곳을 찾아요",
+    ordered: true,
+    items: [["혈흔 고르기", "줄을 당길 혈흔을 보고 맞대요"], ["줄 당기기", "맞댄 채 손을 옮기면 줄이 따라와요"], ["공간발혈부위", "줄이 모이는 곳에 핀치로 놓아요"]],
+    tip: "흰 점을 바라보고 맞댄 다음, 맞댄 채로 손을 옮기면 줄이 따라와요. 떼면 그 자리에 놓여요.",
   },
 };
 
-// 벽의 혈흔: 폭·길이(mm)로 충돌각을 구하고, 긴 축이 수렴점을 향하게 놓는다
-const ORIGIN = { nx: 0.5, ny: 0.38 };
-const STAINS = [
-  { id: 1, nx: 0.21, ny: 0.24, width: 4.1, length: 8.6 },
-  { id: 2, nx: 0.7, ny: 0.23, width: 3.8, length: 6.2 },
-  { id: 3, nx: 0.3, ny: 0.55, width: 4.4, length: 9.9 },
+// 장면 속 혈흔. u·v는 연습 장면 영역 안의 비율, deg는 날아간 방향(꼬리 쪽)
+const CLUSTER_STAINS = [
+  { id: "A1", u: 0.13, v: 0.62, deg: -35, width: 4.0, length: 8.2, group: true },
+  { id: "A2", u: 0.24, v: 0.34, deg: -35, width: 3.6, length: 7.4, group: true },
+  { id: "A3", u: 0.34, v: 0.64, deg: -35, width: 4.2, length: 8.8, group: true },
+  { id: "B1", u: 0.58, v: 0.3, deg: 160, width: 3.9, length: 6.0 },
+  { id: "B2", u: 0.7, v: 0.66, deg: 75, width: 4.4, length: 7.0 },
+  { id: "B3", u: 0.5, v: 0.86, deg: 215, width: 3.5, length: 6.6 },
+];
+const STICKER_STAIN = { u: 0.3, v: 0.36, deg: -40, width: 4.3, length: 9.4 };
+const STRING_ORIGIN = { u: 0.46, v: 0.45 };
+// 폭·길이(mm)로 충돌각을 구하고, 긴 축이 수렴점을 향하게 놓는다
+const STRING_STAINS = [
+  { id: 1, u: 0.12, v: 0.18, width: 4.1, length: 8.6 },
+  { id: 2, u: 0.84, v: 0.5, width: 3.8, length: 6.2 },
+  { id: 3, u: 0.28, v: 0.82, width: 4.4, length: 9.9 },
 ].map((s) => ({ ...s, impact: Math.round((Math.asin(s.width / s.length) * 180) / Math.PI) }));
 
 const TAU = Math.PI * 2;
@@ -278,13 +501,63 @@ const ctx = wall.getContext("2d");
 const camView = $("camView");
 const cctx = camView.getContext("2d");
 const video = $("video");
+const uiRoot = $("ui");
+const cursorEl = $("cursor");
+const ghostEl = $("ghost");
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+const rad = (d) => (d * Math.PI) / 180;
+const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+const rectOf = (d) => ({ x: Math.min(d.x0, d.x1), y: Math.min(d.y0, d.y1), w: Math.abs(d.x1 - d.x0), h: Math.abs(d.y1 - d.y0) });
+const inRect = (p, r) => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
+
+// ---------- 상태 ----------
+const S = {
+  stage: "intro", // intro | pinch | click | cluster | sticker | string | done
+  mode: null, // camera | mouse
+  startedAt: 0,
+  lastActivity: 0,
+  transitioning: false,
+  hover: null, // 벽 위에서 가리키는 것
+  hoverEl: null, // 창에서 가리키는 버튼
+  pressed: null, // 맞댄 채 누르고 있는 버튼
+  pinchCount: 0,
+  clickNext: 0,
+  toolSelected: null,
+  cl: null,
+  st: null,
+  locked: new Set(),
+  dragging: null,
+};
+const input = { x: 0, y: 0, visible: false, pinching: false, amount: 0, lastSeen: 0, history: [] };
+const ripples = [];
+let advanceTimer = 0, feedbackTimer = 0, doneTimer = 0;
+
+function resetStageState() {
+  S.pinchCount = 0;
+  S.clickNext = 0;
+  S.toolSelected = null;
+  S.cl = { step: "draw", drawing: null, rect: null, category: null, pattern: null, created: false };
+  S.st = { step: "place", dragging: false, placed: null, angle: 0, angleBeforeRotate: 0, handleAngle: -Math.PI / 4, rotating: false };
+  S.locked = new Set();
+  S.dragging = null;
+  renderPatterns();
+}
 
 // ---------- 화면 크기와 벽 ----------
 let W = 0, H = 0, U = 1;
+const R = { x: 0, y: 0, w: 0, h: 0 }; // 연습 장면 영역
 const origin = { x: 0, y: 0 };
+const dropZone = { x: 0, y: 0 };
 let wallTexture = null;
+const at = (u, v) => ({ x: R.x + u * R.w, y: R.y + v * R.h });
+const RING = () => 64 * U;
+const DROP_R = () => 56 * U;
+
+function sizeStain(s) {
+  s.a = s.length * 3.4 * U;
+  s.b = s.width * 3.4 * U;
+}
 
 function layout() {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -294,16 +567,32 @@ function layout() {
   wall.width = Math.round(W * dpr);
   wall.height = Math.round(H * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  origin.x = ORIGIN.nx * W;
-  origin.y = ORIGIN.ny * H;
-  for (const s of STAINS) {
-    s.x = s.nx * W;
-    s.y = s.ny * H;
+  const infoW = W <= 1180 ? 250 : 300;
+  R.x = 20 + infoW + 24;
+  R.y = 84;
+  R.w = Math.max(240, W - 24 - R.x);
+  R.h = Math.max(240, H - 24 - CARD_H - 16 - R.y);
+  for (const s of CLUSTER_STAINS) {
+    Object.assign(s, at(s.u, s.v));
+    s.ang = rad(s.deg);
+    sizeStain(s);
+  }
+  Object.assign(STICKER_STAIN, at(STICKER_STAIN.u, STICKER_STAIN.v));
+  STICKER_STAIN.ang = rad(STICKER_STAIN.deg);
+  sizeStain(STICKER_STAIN);
+  dropZone.x = STICKER_STAIN.x;
+  dropZone.y = STICKER_STAIN.y + 115 * U;
+  if (S.st?.placed) Object.assign(S.st.placed, dropZone);
+  Object.assign(origin, at(STRING_ORIGIN.u, STRING_ORIGIN.v));
+  for (const s of STRING_STAINS) {
+    Object.assign(s, at(s.u, s.v));
     s.ang = Math.atan2(s.y - origin.y, s.x - origin.x); // 날아간 방향 = 꼬리 방향
-    s.a = s.length * 3.4 * U;
-    s.b = s.width * 3.4 * U;
+    sizeStain(s);
   }
   wallTexture = W > 0 && H > 0 ? paintWall(wall.width, wall.height) : null;
+  const scene = $("clickScene");
+  scene.style.left = `${R.x + R.w / 2}px`;
+  scene.style.top = `${R.y + R.h / 2}px`;
 }
 
 function paintWall(w, h) {
@@ -336,24 +625,77 @@ function paintWall(w, h) {
   return c;
 }
 
-// ---------- 상태 ----------
-const S = {
-  stage: "intro", // intro | pinch | tap | drag | draw | done
-  mode: null, // camera | mouse
-  startedAt: 0,
-  pinchCount: 0,
-  selected: new Set(),
-  locked: new Set(),
-  dragging: null,
-  drawing: null,
-  area: null,
-  hover: null,
-  transitioning: false,
-  lastActivity: 0,
-};
-const input = { x: 0, y: 0, visible: false, pinching: false, amount: 0, lastSeen: 0, history: [] };
-const ripples = [];
-let advanceTimer = 0, feedbackTimer = 0, doneTimer = 0;
+// ---------- 창 안의 버튼 ----------
+function hitUI(p) {
+  const pad = S.mode === "camera" ? 8 : 0; // 손 커서는 흔들리니 조금 넉넉하게
+  const els = uiRoot.querySelectorAll("[data-hit]");
+  for (let i = els.length - 1; i >= 0; i--) {
+    const el = els[i];
+    if (el.closest("[hidden]")) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width && p.x >= r.left - pad && p.x <= r.right + pad && p.y >= r.top - pad && p.y <= r.bottom + pad) return el;
+  }
+  return null;
+}
+
+function renderPatterns() {
+  const c = CATEGORIES.find((c) => c.id === S.cl?.category);
+  $("patChips").innerHTML = c
+    ? c.patterns.map((p, i) => `<div class="vbtn" data-hit="pat:${i}">${p}</div>`).join("")
+    : `<p>대분류를 먼저 고르세요.</p>`;
+}
+
+function uiTap(hit) {
+  const [kind, value] = hit.split(":");
+  if (kind === "tool" && S.stage === "click") {
+    const want = TOOLS[S.clickNext];
+    if (value === want.id) {
+      S.toolSelected = value;
+      S.clickNext++;
+      say(`‘${want.label}’ 버튼을 눌렀어요.`, "ok");
+      if (S.clickNext >= GOAL.click) complete();
+    } else {
+      say(`지금은 ‘${want.label}’ 버튼을 눌러 보세요.`, "warn");
+    }
+  } else if (kind === "cat") {
+    S.cl.category = value;
+    S.cl.pattern = null;
+    renderPatterns();
+  } else if (kind === "pat") {
+    S.cl.pattern = S.cl.pattern === Number(value) ? null : Number(value);
+  } else if (kind === "cls" && value === "back") {
+    say("연습에서는 이 창에서 그룹 생성까지 해 볼게요.");
+  } else if (kind === "cls" && value === "create") {
+    if (!S.cl.category) return say("대분류를 먼저 골라 주세요.", "warn");
+    S.cl.created = true;
+    S.cl.step = "done";
+    ripple(S.cl.rect.x + S.cl.rect.w / 2, S.cl.rect.y + S.cl.rect.h / 2, "ok");
+    complete();
+  } else if (kind === "edit") {
+    if (value !== "rotate") return say("이번에는 ‘회전’을 눌러 보세요.", "warn");
+    S.st.step = "rotate";
+    S.st.angleBeforeRotate = S.st.angle;
+    S.st.handleAngle = -Math.PI / 4;
+  } else if (kind === "rot" && value === "cancel") {
+    S.st.angle = S.st.angleBeforeRotate;
+    S.st.step = "rotateBtn";
+    say("회전을 취소했어요. 다시 ‘회전’을 눌러 보세요.");
+  } else if (kind === "rot" && value === "confirm") {
+    if (!stickerAligned()) return say("아직 방향이 안 맞아요. 화살표가 혈흔 꼬리 쪽을 가리키게 돌려 보세요.", "warn");
+    S.st.step = "done";
+    ripple(S.st.placed.x, S.st.placed.y, "ok");
+    complete();
+  }
+}
+
+function stickerAligned() {
+  return Math.abs(wrap(S.st.angle - STICKER_STAIN.ang)) < ALIGN_TOLERANCE;
+}
+
+function stickerHandle() {
+  const c = S.st.placed;
+  return { x: c.x + Math.cos(S.st.handleAngle) * RING(), y: c.y + Math.sin(S.st.handleAngle) * RING() };
+}
 
 // ---------- 핀치 입력 (카메라·마우스 공통) ----------
 function acceptsInput() {
@@ -363,99 +705,150 @@ function acceptsInput() {
 function pinchStart(p) {
   S.lastActivity = performance.now();
   if (!acceptsInput()) return;
-  if (S.stage === "tap") {
-    const s = stainAt(p);
-    if (!s) {
+  const el = hitUI(p);
+  if (el) {
+    const hit = el.dataset.hit;
+    if (hit.startsWith("tile:")) return grabTile(hit.slice(5));
+    if (el.classList.contains("disabled")) return;
+    S.pressed = el;
+    el.classList.add("pressed");
+    return;
+  }
+  switch (S.stage) {
+    case "click":
       ripple(p.x, p.y, "miss");
-      say("빈 곳이에요. 혈흔이 밝아졌을 때 맞대 보세요.", "warn");
-    } else if (!S.selected.has(s.id)) {
-      S.selected.add(s.id);
-      ripple(s.x, s.y, "ok");
-      say(`혈흔 ${s.id}을 골랐어요.`, "ok");
-      if (S.selected.size >= GOAL.tap) complete();
+      say("버튼 위에서 맞대 보세요.", "warn");
+      break;
+    case "cluster":
+      if (S.cl.step === "draw") S.cl.drawing = { x0: p.x, y0: p.y, x1: p.x, y1: p.y };
+      else if (S.cl.step === "classify") say("오른쪽 창의 버튼을 눌러 보세요.", "warn");
+      break;
+    case "sticker":
+      if (S.st.step === "place") {
+        say("오른쪽 창에서 ‘방향 화살표’를 집어 보세요.", "warn");
+      } else if (S.st.step === "select") {
+        if (dist(p, S.st.placed) < 48 * U) {
+          S.st.step = "rotateBtn";
+          ripple(S.st.placed.x, S.st.placed.y, "ok");
+          say("스티커를 골랐어요.", "ok");
+        } else {
+          ripple(p.x, p.y, "miss");
+          say("붙인 화살표 위에서 맞대 보세요.", "warn");
+        }
+      } else if (S.st.step === "rotate") {
+        if (dist(p, stickerHandle()) < 40 * U) S.st.rotating = true;
+        else say("링 위 흰 손잡이를 집어 보세요.", "warn");
+      }
+      break;
+    case "string": {
+      const s = handleAt(p);
+      if (s) {
+        S.dragging = s.id;
+        say("좋아요. 맞댄 채로 점선 원까지 옮기세요.");
+      } else {
+        ripple(p.x, p.y, "miss");
+        say("혈흔 가운데 흰 점을 집어 보세요.", "warn");
+      }
+      break;
     }
-  } else if (S.stage === "drag") {
-    const s = handleAt(p);
-    if (s) {
-      S.dragging = s.id;
-      say("좋아요. 맞댄 채로 점선 원까지 옮기세요.");
-    } else {
-      ripple(p.x, p.y, "miss");
-      say("혈흔 가운데 흰 점을 집어 보세요.", "warn");
-    }
-  } else if (S.stage === "draw" && !S.area) {
-    S.drawing = { x0: p.x, y0: p.y, x1: p.x, y1: p.y };
   }
 }
 
+function grabTile(type) {
+  if (S.stage !== "sticker" || S.st.step !== "place") return say("스티커는 이미 붙였어요.");
+  if (type !== "arrow") return say("이번에는 ‘방향 화살표’를 집어 보세요.", "warn");
+  S.st.dragging = true;
+  say("좋아요. 집은 채로 혈흔 아래 점선 자리까지 옮기세요.");
+}
+
 function pinchMove(p) {
-  if (S.drawing) {
-    S.drawing.x1 = p.x;
-    S.drawing.y1 = p.y;
+  if (S.cl?.drawing) {
+    S.cl.drawing.x1 = p.x;
+    S.cl.drawing.y1 = p.y;
+  }
+  if (S.st?.rotating) {
+    const c = S.st.placed;
+    const a = Math.atan2(p.y - c.y, p.x - c.x);
+    S.st.angle = wrap(S.st.angle + wrap(a - S.st.handleAngle));
+    S.st.handleAngle = a;
   }
 }
 
 function pinchEnd(p) {
   S.lastActivity = performance.now();
+  if (S.pressed) {
+    const el = S.pressed;
+    el.classList.remove("pressed");
+    S.pressed = null;
+    if (acceptsInput()) uiTap(el.dataset.hit);
+    return;
+  }
   if (!acceptsInput()) return;
   if (S.stage === "pinch") {
     S.pinchCount++;
-    ripple(W / 2, H * 0.4, "ok");
+    const c = at(0.5, 0.5);
+    ripple(c.x, c.y, "ok");
     say(S.pinchCount >= GOAL.pinch ? "" : `${S.pinchCount}번 했어요.`, "ok");
     if (S.pinchCount >= GOAL.pinch) complete();
-  } else if (S.stage === "drag" && S.dragging != null) {
+  } else if (S.stage === "cluster" && S.cl.drawing) {
+    finishGroupRect(rectOf(S.cl.drawing));
+    S.cl.drawing = null;
+  } else if (S.stage === "sticker" && S.st.dragging) {
+    S.st.dragging = false;
+    if (dist(p, dropZone) < DROP_R() * 1.2) {
+      S.st.placed = { x: dropZone.x, y: dropZone.y };
+      S.st.angle = 0;
+      S.st.step = "select";
+      ripple(dropZone.x, dropZone.y, "ok");
+      say("붙였어요!", "ok");
+    } else {
+      say("점선 자리 안에서 떼 주세요.", "warn");
+    }
+  } else if (S.stage === "sticker" && S.st.rotating) {
+    S.st.rotating = false;
+    if (stickerAligned()) say("방향이 맞았어요. ✓를 누르세요.", "ok");
+  } else if (S.stage === "string" && S.dragging != null) {
     const id = S.dragging;
     S.dragging = null;
-    if (inTarget(p)) {
+    if (dist(p, origin) < targetRadius() * 1.15) {
       S.locked.add(id);
       ripple(origin.x, origin.y, "ok");
       say("줄이 이어졌어요.", "ok");
-      if (S.locked.size >= GOAL.drag) complete();
+      if (S.locked.size >= GOAL.string) complete();
     } else {
       say("점선 원 안에서 손가락을 떼 주세요.", "warn");
     }
-  } else if (S.stage === "draw" && S.drawing) {
-    const r = rectOf(S.drawing);
-    S.drawing = null;
-    const pad = 14 * U;
-    const holdsOrigin = origin.x > r.x + pad && origin.x < r.x + r.w - pad && origin.y > r.y + pad && origin.y < r.y + r.h - pad;
-    if (r.w < 60 * U || r.h < 60 * U) {
-      say("조금 더 크게 그려 보세요.", "warn");
-    } else if (r.w * r.h > W * H * 0.3) {
-      say("너무 커요. 줄이 모이는 곳만 감싸 보세요.", "warn");
-    } else if (!holdsOrigin) {
-      say("줄이 모이는 곳이 사각형 안에 들어오게 그려 주세요.", "warn");
-    } else {
-      S.area = r;
-      complete();
-    }
   }
+}
+
+function finishGroupRect(r) {
+  if (r.w < 40 * U || r.h < 40 * U) return say("조금 더 크게 그려 보세요.", "warn");
+  const inside = CLUSTER_STAINS.filter((s) => inRect(s, r));
+  const groupIn = inside.filter((s) => s.group).length;
+  if (inside.length > groupIn) return say("방향이 다른 혈흔은 빼고 그려 주세요.", "warn");
+  if (groupIn < 3) return say(`같은 방향 혈흔 ${3 - groupIn}개가 아직 밖에 있어요. 3개가 다 들어오게 그려 주세요.`, "warn");
+  S.cl.rect = r;
+  S.cl.step = "classify";
+  ripple(r.x + r.w / 2, r.y + r.h / 2, "ok");
+  say("좋아요! 창에서 혈흔 유형을 골라요.", "ok");
 }
 
 // 손이 카메라 밖으로 나가면 잡고 있던 것을 내려놓는다 (앱의 pinchCancelled와 같다)
 function pinchCancel() {
-  if (S.dragging != null) {
-    S.dragging = null;
-    say("손이 안 보여서 놓쳤어요. 다시 집어 주세요.", "warn");
+  if (S.pressed) {
+    S.pressed.classList.remove("pressed");
+    S.pressed = null;
   }
-  if (S.drawing) {
-    S.drawing = null;
-    say("손이 안 보여서 그리기를 멈췄어요. 다시 그려 주세요.", "warn");
-  }
-}
-
-function stainAt(p) {
-  let best = null, bestD = Infinity;
-  for (const s of STAINS) {
-    const d = dist(p, s);
-    if (d < s.a * 1.3 + 24 * U && d < bestD) { best = s; bestD = d; }
-  }
-  return best;
+  const lost = (what) => say(`손이 안 보여서 ${what}. 다시 해 주세요.`, "warn");
+  if (S.dragging != null) { S.dragging = null; lost("줄을 놓쳤어요"); }
+  if (S.cl?.drawing) { S.cl.drawing = null; lost("그리기를 멈췄어요"); }
+  if (S.st?.dragging) { S.st.dragging = false; lost("스티커를 놓쳤어요"); }
+  if (S.st?.rotating) S.st.rotating = false;
 }
 
 function handleAt(p) {
   let best = null, bestD = Infinity;
-  for (const s of STAINS) {
+  for (const s of STRING_STAINS) {
     if (S.locked.has(s.id)) continue;
     const d = dist(p, s);
     if (d < 40 * U && d < bestD) { best = s; bestD = d; }
@@ -464,8 +857,6 @@ function handleAt(p) {
 }
 
 const targetRadius = () => 56 * U;
-const inTarget = (p) => dist(p, origin) < targetRadius() * 1.15;
-const rectOf = (d) => ({ x: Math.min(d.x0, d.x1), y: Math.min(d.y0, d.y1), w: Math.abs(d.x1 - d.x0), h: Math.abs(d.y1 - d.y0) });
 
 function positionAgo(ms) {
   const t = performance.now() - ms;
@@ -479,24 +870,19 @@ function positionAgo(ms) {
 function enterStage(stage) {
   clearTimeout(advanceTimer);
   clearTimeout(doneTimer);
+  if (S.pressed) S.pressed.classList.remove("pressed");
+  S.pressed = null;
   S.stage = stage;
   S.transitioning = false;
-  S.dragging = null;
-  S.drawing = null;
+  if (stage !== "done") resetStageState();
   const i = STAGES.indexOf(stage);
-  if (stage === "pinch") S.pinchCount = 0;
-  // 건너뛴 단계가 있어도 장면이 이어지게 앞 단계 결과를 채운다
-  if (i >= 0) {
-    S.selected = i > 1 ? new Set(STAINS.map((s) => s.id)) : i === 1 ? new Set() : S.selected;
-    S.locked = i > 2 ? new Set(STAINS.map((s) => s.id)) : new Set();
-    S.area = null;
-  }
   $("intro").hidden = stage !== "intro";
   $("done").hidden = stage !== "done";
   $("card").hidden = i < 0;
+  $("info").hidden = i < 0;
   say("");
   renderSteps();
-  renderCard();
+  renderInfo();
   if (stage === "done") startDoneCountdown();
 }
 
@@ -505,7 +891,6 @@ function complete() {
   S.transitioning = true;
   const i = STAGES.indexOf(S.stage);
   say(i === STAGES.length - 1 ? "완벽해요!" : "잘했어요! 다음 단계로 넘어가요.", "ok", 0);
-  renderCard();
   advanceTimer = setTimeout(() => enterStage(STAGES[i + 1] || "done"), 1200);
 }
 
@@ -517,29 +902,50 @@ function go(delta) {
   enterStage(STAGES[next] || "done");
 }
 
-function resetAll() {
-  S.selected = new Set();
-  S.locked = new Set();
-  S.area = null;
-  enterStage("intro");
-}
-
 function beginPractice() {
   S.startedAt = performance.now();
   S.lastActivity = S.startedAt;
-  S.selected = new Set();
-  S.locked = new Set();
-  S.area = null;
   enterStage("pinch");
 }
 
 function progress() {
   switch (S.stage) {
     case "pinch": return S.pinchCount;
-    case "tap": return S.selected.size;
-    case "drag": return S.locked.size;
-    case "draw": return S.area ? 1 : 0;
+    case "click": return S.clickNext;
+    case "cluster": return (S.cl.rect ? 1 : 0) + (S.cl.category ? 1 : 0) + (S.cl.created ? 1 : 0);
+    case "sticker": return { place: 0, select: 1, rotateBtn: 2, rotate: 3, done: 4 }[S.st.step];
+    case "string": return S.locked.size;
     default: return 0;
+  }
+}
+
+const byMode = (camera, mouse) => (S.mode === "mouse" ? mouse : camera);
+function instruction() {
+  switch (S.stage) {
+    case "pinch":
+      return byMode("엄지와 검지 끝을 가볍게 맞댔다가 떼세요. 3번 해 볼게요.", "클릭이 손가락 맞대기를 대신해요. 아무 곳이나 3번 클릭해 보세요.");
+    case "click": {
+      const t = TOOLS[Math.min(S.clickNext, TOOLS.length - 1)];
+      return byMode(`빛나는 ‘${t.label}’ 버튼을 가리켜 밝아지면 맞댔다 떼세요. 도구 3개를 차례로 눌러요.`, `빛나는 ‘${t.label}’ 버튼을 클릭하세요. 도구 3개를 차례로 눌러요.`);
+    }
+    case "cluster":
+      if (S.cl.step === "draw") return byMode("같은 쪽으로 날아간 혈흔 3개를, 맞댄 채 대각선으로 움직여 사각형으로 감싸세요.", "같은 쪽으로 날아간 혈흔 3개를, 누른 채 대각선으로 끌어 사각형으로 감싸세요.");
+      if (!S.cl.category) return "창에서 대분류를 하나 고르세요. 세부 유형은 골라도 되고 안 골라도 돼요.";
+      return "이제 ‘그룹 생성’을 누르세요.";
+    case "sticker":
+      switch (S.st.step) {
+        case "place": return byMode("오른쪽 창에서 ‘방향 화살표’를 집은 채로 끌어, 혈흔 아래 점선 자리에서 떼세요.", "오른쪽 창에서 ‘방향 화살표’를 누른 채로 끌어, 혈흔 아래 점선 자리에 놓으세요.");
+        case "select": return byMode("붙인 화살표를 가리키고 맞대서 고르세요.", "붙인 화살표를 클릭해 고르세요.");
+        case "rotateBtn": return "화살표 아래 버튼 중 ‘회전’을 누르세요.";
+        case "rotate":
+          if (stickerAligned()) return "방향이 맞았어요. ✓를 눌러 확정하세요.";
+          return byMode("링 위 흰 손잡이를 집고 둘레를 따라 돌려, 화살표가 혈흔 꼬리 쪽을 가리키게 하세요.", "링 위 흰 손잡이를 누른 채 둘레를 따라 돌려, 화살표가 혈흔 꼬리 쪽을 가리키게 하세요.");
+        default: return "";
+      }
+    case "string":
+      return byMode("혈흔 가운데 흰 점을 집은 채로 손을 옮겨, 점선 원 안에서 떼세요. 줄 3개를 이어요.", "혈흔 가운데 흰 점을 누른 채로 끌어, 점선 원 안에서 놓으세요. 줄 3개를 이어요.");
+    default:
+      return "";
   }
 }
 
@@ -547,27 +953,89 @@ function renderSteps() {
   const i = STAGES.indexOf(S.stage);
   for (const li of $("steps").children) {
     const j = STAGES.indexOf(li.dataset.stage);
+    const done = S.stage === "done" || (i >= 0 && j < i);
     li.classList.toggle("current", j === i);
-    li.classList.toggle("done", S.stage === "done" || (i >= 0 && j < i));
-    li.querySelector(".n").textContent = S.stage === "done" || (i >= 0 && j < i) ? "✓" : String(j + 1);
+    li.classList.toggle("done", done);
+    li.querySelector(".n").textContent = done ? "✓" : String(j + 1);
   }
+}
+
+function renderInfo() {
+  const info = INFO[S.stage];
+  if (!info) return;
+  $("infoTitle").textContent = info.title;
+  const tag = info.ordered ? "ol" : "ul";
+  $("infoList").innerHTML = `<${tag}>${info.items.map(([b, t]) => `<li><b>${b}</b>${t}</li>`).join("")}</${tag}>`;
+  $("infoTip").textContent = info.tip;
 }
 
 let lastCardKey = "";
 function renderCard() {
   const i = STAGES.indexOf(S.stage);
   if (i < 0) return;
-  const copy = COPY[S.stage];
-  const key = `${S.stage}|${S.mode}|${progress()}`;
+  const body = instruction();
+  const done = progress();
+  const key = `${S.stage}|${body}|${done}`;
   if (key === lastCardKey) return;
   lastCardKey = key;
   $("cardStep").textContent = `${i + 1} / ${STAGES.length}`;
-  $("cardTitle").textContent = copy.title;
-  $("cardBody").textContent = S.mode === "mouse" ? copy.mouse : copy.camera;
-  $("cardTip").textContent = copy.tip;
-  const goal = GOAL[S.stage];
-  const done = progress();
-  $("pips").innerHTML = Array.from({ length: goal }, (_, k) => `<i class="${k < done ? "on" : ""}"></i>`).join("");
+  $("cardTitle").textContent = TITLES[S.stage];
+  $("cardBody").textContent = body;
+  $("pips").innerHTML = Array.from({ length: GOAL[S.stage] }, (_, k) => `<i class="${k < done ? "on" : ""}"></i>`).join("");
+}
+
+// 창의 보이기·선택·다음에 누를 버튼 표시를 상태에 맞춘다
+function syncUI() {
+  const st = S.stage;
+  const live = !S.transitioning;
+  $("clickScene").hidden = st !== "click";
+  const classWin = $("classWindow");
+  classWin.hidden = !(st === "cluster" && S.cl.step === "classify");
+  $("stickerPanel").hidden = st !== "sticker";
+  $("editBar").hidden = !(st === "sticker" && S.st.step === "rotateBtn");
+  $("rotateBar").hidden = !(st === "sticker" && S.st.step === "rotate");
+  ghostEl.hidden = !(st === "sticker" && S.st.dragging && input.visible);
+
+  for (const el of uiRoot.querySelectorAll("[data-hit^='tool:']")) {
+    const id = el.dataset.hit.slice(5);
+    el.classList.toggle("selected", S.toolSelected === id);
+    el.classList.toggle("target", st === "click" && live && TOOLS[S.clickNext]?.id === id);
+  }
+  if (st === "cluster") {
+    for (const el of uiRoot.querySelectorAll("[data-hit^='cat:']")) el.classList.toggle("selected", el.dataset.hit.slice(4) === S.cl.category);
+    for (const el of uiRoot.querySelectorAll("[data-hit^='pat:']")) el.classList.toggle("selected", Number(el.dataset.hit.slice(4)) === S.cl.pattern);
+    $("createBtn").classList.toggle("disabled", !S.cl.category);
+    $("createBtn").classList.toggle("target", !!S.cl.category && live);
+  }
+  if (st === "sticker") {
+    $("arrowTile").classList.toggle("target", S.st.step === "place" && !S.st.dragging);
+    $("rotateBtn").classList.toggle("target", S.st.step === "rotateBtn");
+    $("confirmBtn").classList.toggle("target", S.st.step === "rotate" && stickerAligned() && live);
+  }
+
+  const cam = $("cam").getBoundingClientRect();
+  const panel = $("stickerPanel");
+  panel.style.left = `${W - 24 - 300}px`;
+  panel.style.top = `${cam.bottom + 16}px`;
+  if (!classWin.hidden) {
+    // 카메라 아래 오른쪽에 두고, 카드와 겹칠 만큼 화면이 낮으면 카메라 왼쪽으로 비킨다
+    const w = classWin.offsetWidth, h = classWin.offsetHeight;
+    const cardTop = H - 24 - CARD_H;
+    let left = W - 24 - w;
+    let top = cam.bottom + 12;
+    if (top + h > cardTop - 8) {
+      top = Math.max(R.y, cardTop - 16 - h);
+      left = cam.left - 16 - w;
+    }
+    classWin.style.left = `${Math.max(R.x, left)}px`;
+    classWin.style.top = `${top}px`;
+  }
+  if (S.st?.placed) {
+    $("editBar").style.left = `${S.st.placed.x}px`;
+    $("editBar").style.top = `${S.st.placed.y + 46 * U}px`;
+    $("rotateBar").style.left = `${S.st.placed.x}px`;
+    $("rotateBar").style.top = `${S.st.placed.y + RING() + 26 * U}px`;
+  }
 }
 
 function say(text, kind = "", ms = 2600) {
@@ -584,7 +1052,7 @@ function startDoneCountdown() {
   let left = DONE_RESET_S;
   const tick = () => {
     $("autoReset").textContent = `${left}초 뒤 처음 화면으로 돌아가요.`;
-    if (left-- <= 0) return resetAll();
+    if (left-- <= 0) return enterStage("intro");
     doneTimer = setTimeout(tick, 1000);
   };
   tick();
@@ -664,7 +1132,7 @@ async function initCamera(onProgress) {
 }
 
 function cameraErrorText(e) {
-  if (e.message === "insecure") return "카메라는 localhost 주소로 열어야 쓸 수 있어요. 안내한 실행 명령으로 다시 열어 주세요.";
+  if (e.message === "insecure") return "카메라는 https나 localhost 주소에서만 쓸 수 있어요.";
   if (e.message === "model") return "손 인식 모델을 받지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.";
   return "카메라를 켜지 못했어요. 주소창 옆에서 카메라를 허용하고 다시 눌러 주세요. 바로 해 보려면 마우스로 해보기를 누르세요.";
 }
@@ -753,45 +1221,28 @@ wall.addEventListener("pointerleave", () => {
   if (S.mode === "mouse" && !input.pinching) input.visible = false;
 });
 
-// ---------- 그리기 ----------
+// ---------- 벽 그리기 ----------
 function draw(now) {
   if (!wallTexture) return;
   ctx.clearRect(0, 0, W, H);
   ctx.drawImage(wallTexture, 0, 0, W, H);
-  if (S.stage === "pinch") drawPinchMeter();
-  else drawScene(now);
+  switch (S.stage) {
+    case "intro": for (const s of CLUSTER_STAINS) drawStain(s); break;
+    case "pinch": drawPinchMeter(); break;
+    case "cluster": drawCluster(); break;
+    case "sticker": drawStickerScene(now); break;
+    case "string": case "done": drawStringScene(now); break;
+  }
   drawRipples(now);
-  if (input.visible && S.stage !== "pinch" && STAGES.includes(S.stage)) drawCursor();
 }
 
-function drawScene(now) {
-  const showHandles = S.stage === "drag";
-  // 이어진 줄: 혈흔에서 수렴점을 지나 조금 더
-  for (const s of STAINS) {
-    if (!S.locked.has(s.id)) continue;
-    const ex = origin.x + (origin.x - s.x) * 0.1;
-    const ey = origin.y + (origin.y - s.y) * 0.1;
-    drawString(s.x, s.y, ex, ey);
-  }
-  if (S.dragging != null) {
-    const s = STAINS.find((t) => t.id === S.dragging);
-    drawString(s.x, s.y, input.x, input.y);
-  }
-  if (S.stage === "drag") drawTarget(now);
-  for (const s of STAINS) drawStain(s, S.hover === s.id && S.stage === "tap");
-  if (showHandles) for (const s of STAINS) if (!S.locked.has(s.id)) drawHandle(s, S.hover === s.id || S.dragging === s.id);
-  if (S.drawing) drawArea(rectOf(S.drawing), false);
-  if (S.area) drawArea(S.area, true);
-  for (const s of STAINS) if (S.selected.has(s.id)) drawStainLabel(s);
-}
-
-function drawStain(s, highlighted) {
+function drawStain(s, highlighted = false, selected = false) {
   ctx.save();
   ctx.translate(s.x, s.y);
   ctx.rotate(s.ang);
   const { a, b } = s;
   if (highlighted) {
-    // visionOS hoverEffect처럼 바라본 것만 밝게 떠오른다
+    // visionOS hoverEffect처럼 가리킨 것만 밝게 떠오른다
     ctx.save();
     ctx.shadowColor = "rgba(255,255,255,0.95)";
     ctx.shadowBlur = 26 * U;
@@ -801,7 +1252,7 @@ function drawStain(s, highlighted) {
     ctx.fill();
     ctx.restore();
   }
-  if (S.selected.has(s.id)) {
+  if (selected) {
     ctx.beginPath();
     ctx.ellipse(a * 0.35, 0, a * 1.6, b * 1.85, 0, 0, TAU);
     ctx.lineWidth = 2.5 * U;
@@ -829,24 +1280,143 @@ function drawStain(s, highlighted) {
   ctx.restore();
 }
 
-function drawStainLabel(s) {
-  const text = `혈흔 ${s.id} · 충돌각 ${s.impact}°`;
+function drawChip(text, x, y, align = "center") {
   const fs = Math.max(12, 14 * U);
+  ctx.save();
   ctx.font = `600 ${fs}px ${CANVAS_FONT}`;
   const w = ctx.measureText(text).width + 22 * U;
   const h = fs + 14 * U;
-  const x = s.x - w / 2;
-  const y = s.y - Math.max(s.a, s.b) * 1.1 - h - 18 * U;
-  ctx.save();
-  ctx.fillStyle = "rgba(28,26,29,0.78)";
+  const left = align === "center" ? x - w / 2 : x;
+  ctx.fillStyle = "rgba(28,26,29,0.8)";
   ctx.beginPath();
-  ctx.roundRect(x, y, w, h, h / 2);
+  ctx.roundRect(left, y - h, w, h, h / 2);
   ctx.fill();
   ctx.fillStyle = "#f6f4f1";
-  ctx.textAlign = "center";
+  ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  ctx.fillText(text, s.x, y + h / 2 + 0.5);
+  ctx.fillText(text, left + 11 * U, y - h / 2 + 0.5);
   ctx.restore();
+}
+
+function drawWallText(text, x, y) {
+  ctx.save();
+  ctx.font = `600 ${Math.max(12, 14 * U)}px ${CANVAS_FONT}`;
+  ctx.textAlign = "center";
+  ctx.fillStyle = "rgba(40,30,28,0.85)";
+  ctx.fillText(text, x, y);
+  ctx.restore();
+}
+
+function drawRect(r, kind) {
+  ctx.save();
+  ctx.fillStyle = kind === "group" ? "rgba(134,227,168,0.2)" : kind === "pending" ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.16)";
+  ctx.fillRect(r.x, r.y, r.w, r.h);
+  ctx.lineWidth = 2.5 * U;
+  if (kind === "drawing") ctx.setLineDash([9 * U, 6 * U]);
+  ctx.strokeStyle = kind === "group" ? "rgba(40,150,90,0.95)" : "rgba(255,255,255,0.95)";
+  ctx.strokeRect(r.x, r.y, r.w, r.h);
+  ctx.restore();
+}
+
+function drawCluster() {
+  const live = S.cl.drawing ? rectOf(S.cl.drawing) : null;
+  for (const s of CLUSTER_STAINS) drawStain(s, !!live && inRect(s, live), !!S.cl.rect && inRect(s, S.cl.rect));
+  if (live) drawRect(live, "drawing");
+  if (S.cl.rect) {
+    drawRect(S.cl.rect, S.cl.created ? "group" : "pending");
+    if (S.cl.created) {
+      const c = CATEGORIES.find((c) => c.id === S.cl.category);
+      const parts = ["그룹 A", c.label];
+      if (S.cl.pattern != null) parts.push(c.patterns[S.cl.pattern]);
+      drawChip(parts.join(" · "), S.cl.rect.x, S.cl.rect.y - 8 * U, "left");
+    }
+  }
+}
+
+function arrowPath(L) {
+  const t = 9 * U, hw = 15 * U, hl = 24 * U;
+  ctx.beginPath();
+  ctx.moveTo(-L / 2, -t / 2);
+  ctx.lineTo(L / 2 - hl, -t / 2);
+  ctx.lineTo(L / 2 - hl, -hw);
+  ctx.lineTo(L / 2, 0);
+  ctx.lineTo(L / 2 - hl, hw);
+  ctx.lineTo(L / 2 - hl, t / 2);
+  ctx.lineTo(-L / 2, t / 2);
+  ctx.closePath();
+}
+
+function drawArrow(x, y, angle, { glow = false, guide = false } = {}) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  arrowPath(80 * U);
+  if (guide) {
+    ctx.setLineDash([6 * U, 5 * U]);
+    ctx.lineWidth = 2 * U;
+    ctx.strokeStyle = "rgba(255,255,255,0.75)";
+    ctx.stroke();
+  } else {
+    if (glow) { ctx.shadowColor = "rgba(255,255,255,0.95)"; ctx.shadowBlur = 20 * U; }
+    ctx.fillStyle = "#ffffff";
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.lineWidth = 1.5 * U;
+    ctx.strokeStyle = "rgba(30,20,20,0.55)";
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawStickerScene(now) {
+  drawStain(STICKER_STAIN);
+  const st = S.st;
+  if (st.step === "place") {
+    const hot = st.dragging && dist(input, dropZone) < DROP_R() * 1.2;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(dropZone.x, dropZone.y, DROP_R(), 0, TAU);
+    ctx.fillStyle = hot ? "rgba(255,255,255,0.42)" : "rgba(255,255,255,0.16)";
+    ctx.fill();
+    ctx.setLineDash([8 * U, 7 * U]);
+    ctx.lineDashOffset = -now / 60;
+    ctx.lineWidth = 2.5 * U;
+    ctx.strokeStyle = "rgba(255,255,255,0.9)";
+    ctx.stroke();
+    ctx.restore();
+    drawWallText(byMode("여기서 떼기", "여기에 놓기"), dropZone.x, dropZone.y + DROP_R() + 22 * U);
+    return;
+  }
+  const c = st.placed;
+  if (st.step === "rotate") {
+    drawArrow(c.x, c.y, STICKER_STAIN.ang, { guide: true });
+    const ok = stickerAligned();
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, RING(), 0, TAU);
+    ctx.lineWidth = 2.5 * U;
+    ctx.strokeStyle = ok ? "rgba(40,170,95,0.95)" : "rgba(255,255,255,0.9)";
+    ctx.stroke();
+    const h = stickerHandle();
+    const hot = S.hover === "handle" || st.rotating;
+    ctx.shadowColor = "rgba(255,255,255,0.9)";
+    ctx.shadowBlur = hot ? 16 * U : 4 * U;
+    ctx.beginPath();
+    ctx.arc(h.x, h.y, (st.rotating ? 8 : hot ? 12 : 10) * U, 0, TAU);
+    ctx.fillStyle = "#ffffff";
+    ctx.fill();
+    ctx.restore();
+  }
+  if (st.step === "rotateBtn") {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, 48 * U, 0, TAU);
+    ctx.lineWidth = 2 * U;
+    ctx.strokeStyle = "rgba(255,255,255,0.85)";
+    ctx.stroke();
+    ctx.restore();
+  }
+  drawArrow(c.x, c.y, st.angle, { glow: S.hover === "sticker" });
 }
 
 function drawString(x0, y0, x1, y1) {
@@ -883,49 +1453,45 @@ function drawHandle(s, active) {
   ctx.restore();
 }
 
-function drawTarget(now) {
-  const r = targetRadius();
-  const hot = S.dragging != null && inTarget(input);
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(origin.x, origin.y, r, 0, TAU);
-  ctx.fillStyle = hot ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.16)";
-  ctx.fill();
-  ctx.setLineDash([8 * U, 7 * U]);
-  ctx.lineDashOffset = -now / 60;
-  ctx.lineWidth = 2.5 * U;
-  ctx.strokeStyle = hot ? "#ffffff" : "rgba(255,255,255,0.9)";
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.font = `600 ${Math.max(12, 14 * U)}px ${CANVAS_FONT}`;
-  ctx.textAlign = "center";
-  ctx.fillStyle = "rgba(40,30,28,0.85)";
-  ctx.fillText(S.mode === "mouse" ? "여기서 놓기" : "여기서 떼기", origin.x, origin.y - r - 12 * U);
-  ctx.restore();
-}
-
-function drawArea(r, final) {
-  ctx.save();
-  ctx.fillStyle = final ? "rgba(134,227,168,0.2)" : "rgba(255,255,255,0.18)";
-  ctx.fillRect(r.x, r.y, r.w, r.h);
-  ctx.lineWidth = 2.5 * U;
-  if (!final) ctx.setLineDash([9 * U, 6 * U]);
-  ctx.strokeStyle = final ? "rgba(40,150,90,0.95)" : "rgba(255,255,255,0.95)";
-  ctx.strokeRect(r.x, r.y, r.w, r.h);
-  if (final) {
-    ctx.font = `700 ${Math.max(12, 14 * U)}px ${CANVAS_FONT}`;
-    ctx.fillStyle = "rgba(25,90,55,0.95)";
-    ctx.fillText("수렴 영역", r.x + 4 * U, r.y - 10 * U);
+function drawStringScene(now) {
+  for (const s of STRING_STAINS) {
+    if (!S.locked.has(s.id)) continue;
+    drawString(s.x, s.y, origin.x + (origin.x - s.x) * 0.1, origin.y + (origin.y - s.y) * 0.1);
   }
-  ctx.restore();
+  if (S.dragging != null) {
+    const s = STRING_STAINS.find((t) => t.id === S.dragging);
+    drawString(s.x, s.y, input.x, input.y);
+  }
+  if (S.stage === "string") {
+    const r = targetRadius();
+    const hot = S.dragging != null && dist(input, origin) < r * 1.15;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(origin.x, origin.y, r, 0, TAU);
+    ctx.fillStyle = hot ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.16)";
+    ctx.fill();
+    ctx.setLineDash([8 * U, 7 * U]);
+    ctx.lineDashOffset = -now / 60;
+    ctx.lineWidth = 2.5 * U;
+    ctx.strokeStyle = "rgba(255,255,255,0.9)";
+    ctx.stroke();
+    ctx.restore();
+    drawWallText(byMode("여기서 떼기", "여기서 놓기"), origin.x, origin.y - r - 12 * U);
+  }
+  for (const s of STRING_STAINS) drawStain(s);
+  if (S.stage === "string") {
+    for (const s of STRING_STAINS) if (!S.locked.has(s.id)) drawHandle(s, S.hover === s.id || S.dragging === s.id);
+  }
+  for (const s of STRING_STAINS) drawChip(`혈흔 ${s.id} · 충돌각 ${s.impact}°`, s.x, s.y - Math.max(s.a, s.b) * 1.1 - 18 * U);
 }
 
 function drawPinchMeter() {
-  const cx = W / 2, cy = H * 0.4, R = 92 * U;
+  const { x: cx, y: cy } = at(0.5, 0.5);
+  const Rm = 92 * U;
   const amount = input.visible ? input.amount : 0;
   ctx.save();
   ctx.beginPath();
-  ctx.arc(cx, cy, R, 0, TAU);
+  ctx.arc(cx, cy, Rm, 0, TAU);
   ctx.fillStyle = input.pinching ? "rgba(255,255,255,0.42)" : "rgba(28,26,29,0.55)";
   ctx.fill();
   ctx.lineWidth = 3 * U;
@@ -940,7 +1506,7 @@ function drawPinchMeter() {
     ctx.fillText("들어 주세요", cx, cy + 13 * U);
   } else {
     // 두 점 사이 거리가 실제 엄지·검지 사이 거리를 따라간다
-    const sep = (1 - amount) * R * 0.62;
+    const sep = (1 - amount) * Rm * 0.62;
     const ux = Math.SQRT1_2, uy = -Math.SQRT1_2;
     const dots = [
       { x: cx - ux * sep, y: cy - uy * sep, label: "엄지" },
@@ -951,10 +1517,10 @@ function drawPinchMeter() {
     for (const [k, d] of dots.entries()) {
       ctx.beginPath();
       ctx.arc(d.x, d.y, 13 * U, 0, TAU);
-      ctx.fillStyle = input.pinching ? "#ffffff" : "rgba(255,255,255,0.92)";
+      ctx.fillStyle = "#ffffff";
       ctx.fill();
       if (sep > 30 * U) {
-        ctx.fillStyle = input.pinching ? "#2a2628" : "#f6f4f1";
+        ctx.fillStyle = "#f6f4f1";
         ctx.textAlign = k === 0 ? "right" : "left";
         ctx.fillText(d.label, d.x + (k === 0 ? -20 : 20) * U, d.y);
       }
@@ -976,23 +1542,6 @@ function drawRipples(now) {
     ctx.stroke();
     ctx.restore();
   }
-}
-
-function drawCursor() {
-  const { x, y, amount, pinching } = input;
-  ctx.save();
-  ctx.shadowColor = "rgba(0,0,0,0.4)";
-  ctx.shadowBlur = 8 * U;
-  ctx.beginPath();
-  ctx.arc(x, y, (pinching ? 14 : 18) * U, 0, TAU);
-  ctx.lineWidth = 2.5 * U;
-  ctx.strokeStyle = "rgba(255,255,255,0.95)";
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(x, y, (3 + amount * 9) * U, 0, TAU);
-  ctx.fillStyle = "#ffffff";
-  ctx.fill();
-  ctx.restore();
 }
 
 function drawCamera() {
@@ -1063,30 +1612,49 @@ function renderStatus() {
 
 function updateHover() {
   S.hover = null;
-  if (!input.visible || input.pinching || !acceptsInput()) return;
-  if (S.stage === "tap") {
-    const s = stainAt(input);
-    if (s && !S.selected.has(s.id)) S.hover = s.id;
-  } else if (S.stage === "drag") {
-    const s = handleAt(input);
-    if (s) S.hover = s.id;
+  const canPoint = input.visible && !input.pinching && acceptsInput();
+  const el = canPoint ? hitUI(input) : null;
+  if (el !== S.hoverEl) {
+    S.hoverEl?.classList.remove("hover");
+    el?.classList.add("hover");
+    S.hoverEl = el;
   }
+  if (!canPoint || el) return;
+  if (S.stage === "string") {
+    S.hover = handleAt(input)?.id ?? null;
+  } else if (S.stage === "sticker" && S.st.placed) {
+    if (S.st.step === "select" && dist(input, S.st.placed) < 48 * U) S.hover = "sticker";
+    if (S.st.step === "rotate" && dist(input, stickerHandle()) < 40 * U) S.hover = "handle";
+  }
+}
+
+function renderPointer() {
+  const show = input.visible && STAGES.includes(S.stage) && S.stage !== "pinch";
+  cursorEl.hidden = !show;
+  if (show) {
+    cursorEl.style.transform = `translate(${input.x}px, ${input.y}px)`;
+    cursorEl.style.setProperty("--amt", input.amount.toFixed(2));
+    cursorEl.classList.toggle("pinching", input.pinching);
+  }
+  if (!ghostEl.hidden) ghostEl.style.transform = `translate(${input.x}px, ${input.y}px)`;
 }
 
 function frame(now) {
   if (W !== innerWidth || H !== innerHeight) layout();
   if (S.mode === "camera") trackHand(now);
   // 다음 사람이 바로 시작할 수 있게, 오래 손이 안 보이면 처음 화면으로
-  if (S.mode === "camera" && STAGES.includes(S.stage) && now - S.lastActivity > IDLE_RESET_MS) resetAll();
+  if (S.mode === "camera" && STAGES.includes(S.stage) && now - S.lastActivity > IDLE_RESET_MS) enterStage("intro");
   updateHover();
+  syncUI();
   draw(now);
+  renderPointer();
   drawCamera();
   renderStatus();
   renderCard();
   requestAnimationFrame(frame);
 }
 
-// ---------- 버튼 ----------
+// ---------- 운영자 버튼 ----------
 function setMode(mode) {
   if (S.mode === mode) return;
   if (input.pinching) { input.pinching = false; pinchCancel(); }
@@ -1139,10 +1707,12 @@ addEventListener("keydown", (e) => {
   if (e.key === "ArrowRight") go(1);
   else if (e.key === "ArrowLeft") go(-1);
   else if (e.key === "r" || e.key === "R") { if (STAGES.includes(S.stage)) enterStage(S.stage); }
-  else if (e.key === "Escape") resetAll();
+  else if (e.key === "Escape") enterStage("intro");
 });
 addEventListener("resize", layout);
 
+$("catChips").innerHTML = CATEGORIES.map((c) => `<div class="vbtn" data-hit="cat:${c.id}">${c.label}</div>`).join("");
+resetStageState();
 layout();
 enterStage("intro");
 requestAnimationFrame(frame);
