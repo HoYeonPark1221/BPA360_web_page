@@ -407,20 +407,20 @@ button:disabled { opacity: 0.55; cursor: progress; }
 const MP = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
 const MODEL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
 
-// 핀치 판정: 엄지·검지 끝의 3D 거리를 손바닥 크기(손목~중지 뿌리)로 나눈 값.
-// 민감도 단계마다 이 값보다 가까우면 맞댄 것으로 본다. 1이 가장 둔하다.
-const PINCH_LEVELS = [0.12, 0.15, 0.18, 0.22, 0.26];
+// 핀치 판정: 엄지·검지 끝 거리를 손바닥 크기(손목~중지 뿌리)로 나눈 값.
+// 민감도 단계마다 이 값보다 가까우면 맞댄 것으로 본다. 1이 가장 둔하고, 5는 처음 버전과 같다.
+const PINCH_LEVELS = [0.18, 0.21, 0.24, 0.27, 0.3];
 const DEFAULT_PINCH_LEVEL = 2;
 // 맞댄 뒤 이만큼 더 벌어져야 뗀 것으로 본다 (경계에서 깜빡이지 않게)
-const PINCH_RELEASE_GAP = 0.14;
-// 몇 프레임 연속으로 맞대거나 떼야 인정한다 (카메라 30fps 기준 약 0.1초)
-const PINCH_START_FRAMES = 3;
-const PINCH_END_FRAMES = 2;
+const PINCH_RELEASE_GAP = 0.15;
+// 손가락이 잠깐 스친 것은 무시한다 (카메라 30fps 기준 2프레임 ≈ 0.07초)
+const PINCH_START_FRAMES = 2;
+const PINCH_END_FRAMES = 1;
 const HAND_OPEN = 0.95;
 // 카메라 화면 중 이 상자를 벽 전체로 늘려, 팔을 끝까지 뻗지 않아도 되게 한다
 const REACH = { x0: 0.18, x1: 0.82, y0: 0.15, y1: 0.78 };
 // 손가락을 맞대거나 뗄 때 커서가 밀리므로, 판정은 조금 전 위치로 한다
-const PINCH_LOOKBACK_MS = 160;
+const PINCH_LOOKBACK_MS = 120;
 const HAND_LOST_MS = 250;
 const IDLE_RESET_MS = 45000;
 const DONE_RESET_S = 25;
@@ -1093,7 +1093,7 @@ const filterY = new OneEuro();
 let closeFrames = 0, openFrames = 0;
 let pinchLevel = DEFAULT_PINCH_LEVEL;
 try {
-  const stored = localStorage.getItem("pinchLevel");
+  const stored = localStorage.getItem("pinchLevel2");
   const saved = stored === null ? NaN : Number(stored);
   if (Number.isInteger(saved) && saved >= 0 && saved < PINCH_LEVELS.length) pinchLevel = saved;
 } catch {}
@@ -1121,8 +1121,8 @@ async function initCamera(onProgress) {
           baseOptions: { modelAssetPath: MODEL, delegate },
           runningMode: "VIDEO",
           numHands: 1,
-          minHandDetectionConfidence: 0.7,
-          minHandPresenceConfidence: 0.7,
+          minHandDetectionConfidence: 0.6,
+          minHandPresenceConfidence: 0.6,
           minTrackingConfidence: 0.5,
         });
         try {
@@ -1156,19 +1156,15 @@ function trackHand(now) {
     lastVideoTime = video.currentTime;
     const result = landmarker.detectForVideo(video, now);
     latestHand = result.landmarks?.[0] || null;
-    if (latestHand) readHand(latestHand, result.worldLandmarks?.[0], now);
+    if (latestHand) readHand(latestHand, now);
   }
   if (input.visible && now - input.lastSeen > HAND_LOST_MS) loseHand();
 }
 
-function readHand(lm, world, now) {
-  // 화면 위 거리만 쓰면 엄지와 검지가 카메라 쪽으로 겹쳐 보일 때도 맞댄 것으로 잘못 본다.
-  // 그래서 미터 단위 3D 좌표(worldLandmarks)로 잰다.
+function readHand(lm, now) {
   const aspect = video.videoWidth / video.videoHeight || 16 / 9;
-  const span = world
-    ? (a, b) => Math.hypot(world[a].x - world[b].x, world[a].y - world[b].y, world[a].z - world[b].z)
-    : (a, b) => Math.hypot((lm[a].x - lm[b].x) * aspect, lm[a].y - lm[b].y, (lm[a].z - lm[b].z) * aspect);
-  const ratio = span(4, 8) / Math.max(span(0, 9), 1e-4);
+  const span = (a, b) => Math.hypot((lm[a].x - lm[b].x) * aspect, lm[a].y - lm[b].y);
+  const ratio = span(4, 8) / Math.max(span(0, 9), 1e-3);
   // 좌우 반전한 엄지·검지 끝 가운데를 커서로 쓴다
   const mx = 1 - (lm[4].x + lm[8].x) / 2;
   const my = (lm[4].y + lm[8].y) / 2;
@@ -1199,7 +1195,7 @@ function readHand(lm, world, now) {
 
 function setPinchLevel(level) {
   pinchLevel = clamp(level, 0, PINCH_LEVELS.length - 1);
-  try { localStorage.setItem("pinchLevel", String(pinchLevel)); } catch {}
+  try { localStorage.setItem("pinchLevel2", String(pinchLevel)); } catch {}
   $("pinchLevel").textContent = `${pinchLevel + 1}/${PINCH_LEVELS.length}`;
 }
 
