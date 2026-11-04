@@ -173,6 +173,24 @@ button:disabled { opacity: 0.55; cursor: progress; }
 .chips .vbtn { font-size: 14px; padding: 8px 13px; }
 .win-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 
+.scroll-window { width: 380px; display: grid; gap: 10px; transform: translate(-50%, -50%); }
+.scroll-view { position: relative; height: 300px; overflow: hidden; border-radius: 18px; background: rgba(0, 0, 0, 0.14); }
+.scroll-content { display: grid; gap: 4px; padding: 6px; will-change: transform; }
+.row { justify-content: space-between; border-radius: 14px; padding: 12px 16px; background: transparent; font-size: 16px; }
+.row small { font-size: 12.5px; font-weight: 500; color: var(--ink-3); }
+.row.selected small { color: rgba(22, 20, 22, 0.6); }
+.scroll-bar { position: absolute; right: 4px; top: 0; width: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.45); }
+
+/* visionOS 창 아래 막대: 집어 끌면 창이 옮겨진다 */
+.winbar { width: 150px; height: 30px; padding: 0; background: transparent; transform: translateX(-50%); }
+.winbar::before { content: ""; width: 96px; height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.6); transition: width 0.15s, background 0.15s; }
+.winbar.hover, .winbar.pressed { background: transparent; box-shadow: none; transform: translateX(-50%); }
+.winbar.hover::before, .winbar.pressed::before { width: 124px; background: #fff; }
+
+.axis-done { font-size: 16px; padding: 12px 22px; transform: translateX(-50%); }
+.axis-done.hover { transform: translateX(-50%) scale(1.05); }
+.axis-done.pressed { transform: translateX(-50%) scale(0.95); }
+
 .sticker-panel { width: 300px; display: grid; gap: 12px; }
 .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .tile { flex-direction: column; gap: 8px; padding: 16px 8px 12px; border-radius: 20px; background: rgba(255, 255, 255, 0.08); font-size: 13px; }
@@ -217,6 +235,7 @@ button:disabled { opacity: 0.55; cursor: progress; }
 .actions .ghost { font-size: 17px; padding: 14px 24px; }
 .error { margin: 0; font-size: 15.5px; line-height: 1.5; color: var(--warn); }
 .fine { margin: 0; font-size: 13.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.done-sub { margin: 6px 0 0; font-size: 13.5px; font-weight: 600; color: var(--ink-3); }
 
 @media (max-width: 1180px) {
   .info { width: 250px; padding: 18px; }
@@ -260,6 +279,15 @@ button:disabled { opacity: 0.55; cursor: progress; }
     </div>
   </div>
 
+  <div class="win scroll-window" id="scrollWin" hidden>
+    <h3>세부 유형</h3>
+    <p class="win-sub">목록을 위아래로 밀어서 찾아요</p>
+    <div class="scroll-view" id="scrollView">
+      <div class="scroll-content" id="scrollContent"></div>
+      <i class="scroll-bar" id="scrollBar"></i>
+    </div>
+  </div>
+
   <div class="win class-window" id="classWindow" hidden>
     <h3>혈흔 유형 분류</h3>
     <p class="win-sub">대분류</p>
@@ -271,6 +299,9 @@ button:disabled { opacity: 0.55; cursor: progress; }
       <div class="vbtn" data-hit="cls:create" id="createBtn">그룹 생성</div>
     </div>
   </div>
+  <div class="vbtn winbar" data-hit="winbar" id="classBar" hidden></div>
+
+  <div class="vbtn axis-done" data-hit="axis:done" id="axisDone" hidden>측정 완료</div>
 
   <div class="win sticker-panel" id="stickerPanel" hidden>
     <h3>스티커</h3>
@@ -333,7 +364,8 @@ button:disabled { opacity: 0.55; cursor: progress; }
   <li data-stage="click"><span class="n">2</span>누르기</li>
   <li data-stage="cluster"><span class="n">3</span>그룹 만들기</li>
   <li data-stage="sticker"><span class="n">4</span>스티커</li>
-  <li data-stage="string"><span class="n">5</span>줄 잇기</li>
+  <li data-stage="axis"><span class="n">5</span>타원 맞추기</li>
+  <li data-stage="string"><span class="n">6</span>줄 잇기</li>
 </ol>
 
 <aside class="info glass" id="info" hidden>
@@ -357,7 +389,7 @@ button:disabled { opacity: 0.55; cursor: progress; }
 
 <section class="card glass" id="card" hidden>
   <div class="card-head">
-    <p class="eyebrow" id="cardStep">1 / 5</p>
+    <p class="eyebrow" id="cardStep">1 / 6</p>
     <div class="pips" id="pips"></div>
   </div>
   <h1 id="cardTitle"></h1>
@@ -374,8 +406,8 @@ button:disabled { opacity: 0.55; cursor: progress; }
 <div class="overlay" id="intro">
   <div class="panel">
     <p class="eyebrow">BPA 360 · 체험 전 연습</p>
-    <h2>Vision Pro를 쓰기 전에<br>손동작 5가지를 연습해 봐요</h2>
-    <p class="lead">앱에서 하는 그대로 버튼을 누르고, 혈흔을 묶고, 스티커를 붙이고, 줄을 이어요. 2~3분이면 끝나요.</p>
+    <h2>Vision Pro를 쓰기 전에<br>손동작 6가지를 연습해 봐요</h2>
+    <p class="lead">앱에서 하는 그대로 버튼을 누르고, 혈흔을 묶고, 스티커를 붙이고, 타원을 맞추고, 줄을 이어요. 3분쯤이면 끝나요.</p>
     <ul class="howto">
       <li><b>오른손을 카메라 앞에</b> 들어 주세요. 오른쪽 위 화면에 손이 보이면 준비 끝이에요.</li>
       <li>엄지와 검지 사이의 <b>흰 원</b>이 손을 따라다니는 커서예요.</li>
@@ -398,6 +430,11 @@ button:disabled { opacity: 0.55; cursor: progress; }
       <li><b>손은 편하게.</b> 무릎 위나 몸 옆에 내려 둬도 기기가 알아봐요.</li>
       <li><b>벽에 그리거나 붙일 땐 오른손으로.</b> 사각형과 스티커는 오른손이 가리키는 곳에 놓여요.</li>
     </ol>
+    <p class="done-sub">기기에서 알아 두면 좋은 것</p>
+    <ul class="recap">
+      <li><b>글자 입력.</b> 키보드의 마이크 버튼을 누르고 말하면 바로 입력돼요.</li>
+      <li><b>화면이 엉뚱한 곳에 있으면.</b> Digital Crown을 길게 누르면 창이 눈앞으로 다시 모여요.</li>
+    </ul>
     <div class="actions"><button id="againBtn" class="primary" type="button">다시 시작</button></div>
     <p class="fine" id="autoReset"></p>
   </div>
@@ -423,9 +460,9 @@ const CARD_H = 200;
 // 스티커 방향이 이 각도 안이면 맞았다고 본다
 const ALIGN_TOLERANCE = (12 * Math.PI) / 180;
 
-const STAGES = ["pinch", "click", "cluster", "sticker", "string"];
-const GOAL = { pinch: 3, click: 3, cluster: 3, sticker: 4, string: 3 };
-const TITLES = { pinch: "손가락 맞대기", click: "버튼 누르기", cluster: "그룹 만들기", sticker: "스티커 붙이고 돌리기", string: "줄 잇기" };
+const STAGES = ["pinch", "click", "cluster", "sticker", "axis", "string"];
+const GOAL = { pinch: 3, click: 4, cluster: 4, sticker: 4, axis: 4, string: 3 };
+const TITLES = { pinch: "손가락 맞대기", click: "버튼 누르기", cluster: "그룹 만들기", sticker: "스티커 붙이고 돌리기", axis: "타원 맞추기", string: "줄 잇기" };
 const TOOLS = [
   { id: "grouping", label: "그룹화" },
   { id: "sticker", label: "스티커" },
@@ -439,6 +476,16 @@ const CATEGORIES = [
   { id: "regularMargin", label: "매끄러운 경계혈흔", patterns: ["형태전이혈흔", "흡수혈흔", "흐름혈흔", "고인혈흔"] },
   { id: "miscellaneous", label: "비분류혈흔", patterns: ["모세관작용혈흔", "윤곽혈흔", "공간혈흔", "이차튐혈흔", "곤충매개흔"] },
 ];
+// 스크롤 연습: 세부 유형 전체를 대분류 순서대로 늘어놓고 아래쪽 항목을 찾게 한다
+const SCROLL_ROWS = CATEGORIES.flatMap((c) => c.patterns.map((label) => ({ label, category: c.label })));
+const SCROLL_TARGET = "이차튐혈흔";
+// 타원 맞추기: 확대창 안 좌표(U 단위, 확대창 가운데가 0). 혈흔은 줄 잇기의 혈흔 1(폭 4.1 · 길이 8.6 mm)
+const AXIS_PANEL = { u: 0.42, v: 0.46, w: 560, h: 340 };
+const AXIS_STAIN = { x: 0, y: 0, a: 100, b: 48, deg: -160 };
+// 손잡이는 손보다 천천히 따라와 작은 혈흔도 맞출 수 있게 한다 (앱의 AxisMeasurementView와 같은 방식)
+const AXIS_GAIN = 0.6;
+// 이 안으로 들어오면 맞춘 것으로 본다: 가운데 거리(U), 축 각도, 장축·단축 길이 비율
+const AXIS_FIT = { center: 14, angle: (8 * Math.PI) / 180, major: 0.12, minor: 0.15 };
 // 왼쪽 창: 이 손동작으로 앱에서 무엇을 하는지
 const INFO = {
   pinch: {
@@ -450,13 +497,13 @@ const INFO = {
   click: {
     title: "버튼은 보고 맞대서 눌러요",
     ordered: false,
-    items: [["도구 바꾸기", "그룹화 · 스티커 · 방향 펜"], ["단계 넘기기", "다음 · 완료 · 다시하기"], ["고르기", "혈흔 유형, 스티커 색"]],
-    tip: "손 대신 눈으로 가리켜요. 버튼을 바라보면 살짝 밝아지고, 그때 맞댔다 떼면 눌려요.",
+    items: [["도구 바꾸기", "그룹화 · 스티커 · 방향 펜"], ["단계 넘기기", "다음 · 완료 · 다시하기"], ["고르기", "혈흔 유형, 스티커 색"], ["스크롤", "긴 목록은 맞댄 채 위아래로 밀어요"]],
+    tip: "손 대신 눈으로 가리켜요. 버튼을 바라보면 살짝 밝아지고, 그때 맞댔다 떼면 눌려요. 목록은 맞댄 채 손을 위아래로 움직이면 넘어가요.",
   },
   cluster: {
     title: "같은 방향성을 보이는 혈흔을 묶어 그룹을 만들어요",
     ordered: true,
-    items: [["그룹화 도구", "아래 도구 막대에서 ‘그룹화’를 눌러요"], ["사각형 그리기", "묶을 혈흔들을 사각형으로 감싸요"], ["유형 고르기", "창에서 혈흔 유형을 고르고 ‘그룹 생성’을 눌러요"]],
+    items: [["그룹화 도구", "아래 도구 막대에서 ‘그룹화’를 눌러요"], ["사각형 그리기", "묶을 혈흔들을 사각형으로 감싸요"], ["창 옮기기", "창이 가리면 아래 막대를 집어 옆으로 옮겨요"], ["유형 고르기", "창에서 혈흔 유형을 고르고 ‘그룹 생성’을 눌러요"]],
     tip: "사각형은 눈이 아니라 오른손이 가리키는 곳에 그려져요. 팔을 벽 쪽으로 편하게 뻗어 보세요.",
   },
   sticker: {
@@ -464,6 +511,12 @@ const INFO = {
     ordered: true,
     items: [["붙이기", "스티커 창에서 집어 벽으로 끌어 와요"], ["고르기", "붙인 스티커를 고르면 이동 · 회전 · 색 · 삭제가 나와요"], ["돌리기", "링 위 손잡이를 돌려 방향을 맞추고 ✓로 확정해요"]],
     tip: "끌어 온 스티커는 오른손이 가리키는 벽 위치에 붙어요.",
+  },
+  axis: {
+    title: "타원을 맞춰 충돌각을 재요",
+    ordered: false,
+    items: [["돌리기", "노란 Leading edge 점을 끌어요"], ["길이 · 폭", "끝과 옆의 흰 점을 끌면 그쪽만 늘거나 줄어요"], ["옮기기", "타원 안쪽을 끌어요"], ["충돌각", "arcsin(폭 ÷ 길이)로 바로 계산돼요"]],
+    tip: "핀치를 시작한 곳에서 가장 가까운 점이 잡혀요. 점은 손보다 천천히 따라와서 작은 혈흔도 맞출 수 있어요.",
   },
   string: {
     title: "줄 연결법으로 혈흔이 시작된 곳을 찾아요",
@@ -513,7 +566,7 @@ const inRect = (p, r) => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= 
 
 // ---------- 상태 ----------
 const S = {
-  stage: "intro", // intro | pinch | click | cluster | sticker | string | done
+  stage: "intro", // intro | pinch | click | cluster | sticker | axis | string | done
   mode: null, // camera | mouse
   startedAt: 0,
   lastActivity: 0,
@@ -526,6 +579,8 @@ const S = {
   toolSelected: null,
   cl: null,
   st: null,
+  sc: null, // 목록 스크롤
+  ax: null, // 타원 (확대창 좌표)
   locked: new Set(),
   dragging: null,
 };
@@ -537,8 +592,10 @@ function resetStageState() {
   S.pinchCount = 0;
   S.clickNext = 0;
   S.toolSelected = null;
-  S.cl = { step: "draw", drawing: null, rect: null, category: null, pattern: null, created: false };
+  S.cl = { step: "draw", drawing: null, rect: null, win: null, moving: null, category: null, pattern: null, created: false };
   S.st = { step: "place", dragging: false, placed: null, angle: 0, angleBeforeRotate: 0, handleAngle: -Math.PI / 4, rotating: false };
+  S.sc = { y: 0, vel: 0, drag: null, picked: null };
+  S.ax = { cx: 36, cy: 28, a: 70, b: 70, th: 0, drag: null };
   S.locked = new Set();
   S.dragging = null;
   renderPatterns();
@@ -590,9 +647,10 @@ function layout() {
     sizeStain(s);
   }
   wallTexture = W > 0 && H > 0 ? paintWall(wall.width, wall.height) : null;
-  const scene = $("clickScene");
-  scene.style.left = `${R.x + R.w / 2}px`;
-  scene.style.top = `${R.y + R.h / 2}px`;
+  for (const id of ["clickScene", "scrollWin"]) {
+    $(id).style.left = `${R.x + R.w / 2}px`;
+    $(id).style.top = `${R.y + R.h / 2}px`;
+  }
 }
 
 function paintWall(w, h) {
@@ -632,6 +690,9 @@ function hitUI(p) {
   for (let i = els.length - 1; i >= 0; i--) {
     const el = els[i];
     if (el.closest("[hidden]")) continue;
+    // 목록 밖으로 스크롤된 줄은 보이지 않으니 누를 수 없다
+    const view = el.closest(".scroll-view")?.getBoundingClientRect();
+    if (view && (p.x < view.left || p.x > view.right || p.y < view.top || p.y > view.bottom)) continue;
     const r = el.getBoundingClientRect();
     if (r.width && p.x >= r.left - pad && p.x <= r.right + pad && p.y >= r.top - pad && p.y <= r.bottom + pad) return el;
   }
@@ -652,11 +713,16 @@ function uiTap(hit) {
     if (value === want.id) {
       S.toolSelected = value;
       S.clickNext++;
-      say(`‘${want.label}’ 버튼을 눌렀어요.`, "ok");
-      if (S.clickNext >= GOAL.click) complete();
+      say(S.clickNext >= TOOLS.length ? "좋아요! 이번엔 목록을 스크롤해서 찾아볼게요." : `‘${want.label}’ 버튼을 눌렀어요.`, "ok");
     } else {
       say(`지금은 ‘${want.label}’ 버튼을 눌러 보세요.`, "warn");
     }
+  } else if (kind === "row") {
+    if (SCROLL_ROWS[Number(value)].label !== SCROLL_TARGET) return say(`‘${SCROLL_TARGET}’을 찾아 보세요. 목록 아래쪽에 있어요.`, "warn");
+    S.sc.picked = Number(value);
+    complete();
+  } else if ((kind === "cat" || kind === "pat" || kind === "cls") && S.cl.step === "move") {
+    say("먼저 창 아래 흰 막대를 집어 창을 옮겨 주세요.", "warn");
   } else if (kind === "cat") {
     S.cl.category = value;
     S.cl.pattern = null;
@@ -685,7 +751,120 @@ function uiTap(hit) {
     S.st.step = "done";
     ripple(S.st.placed.x, S.st.placed.y, "ok");
     complete();
+  } else if (kind === "axis") {
+    if (!axisFit().ok) return say("아직 타원이 혈흔과 안 맞아요. 몸통 테두리에 맞춰 보세요.", "warn");
+    complete();
   }
+}
+
+// ---------- 목록 스크롤 ----------
+function scrollMax() {
+  return Math.max(0, $("scrollContent").offsetHeight - $("scrollView").clientHeight);
+}
+
+function updateScroll(dt) {
+  if (S.stage !== "click" || S.clickNext < TOOLS.length) return;
+  // 손을 놓은 뒤에도 조금 더 미끄러지다 멈춘다
+  if (!S.sc.drag && Math.abs(S.sc.vel) > 0.02) {
+    S.sc.y += S.sc.vel * dt;
+    S.sc.vel *= Math.pow(0.94, dt / 16.7);
+  }
+  const max = scrollMax();
+  S.sc.y = clamp(S.sc.y, 0, max);
+  if (S.sc.y === 0 || S.sc.y === max) S.sc.vel = 0;
+  $("scrollContent").style.transform = `translateY(${-S.sc.y}px)`;
+  const viewH = $("scrollView").clientHeight;
+  const barH = max ? Math.max(28, (viewH * viewH) / (viewH + max)) : 0;
+  const bar = $("scrollBar");
+  bar.style.height = `${barH}px`;
+  bar.style.transform = `translateY(${max ? (S.sc.y / max) * (viewH - barH) : 0}px)`;
+}
+
+// ---------- 타원 맞추기 ----------
+const axisCenter = () => at(AXIS_PANEL.u, AXIS_PANEL.v);
+const axisToScreen = (q) => {
+  const c = axisCenter();
+  return { x: c.x + q.x * U, y: c.y + q.y * U };
+};
+const axisToLocal = (p) => {
+  const c = axisCenter();
+  return { x: (p.x - c.x) / U, y: (p.y - c.y) / U };
+};
+
+function axisHandles(e = S.ax) {
+  const ux = Math.cos(e.th), uy = Math.sin(e.th);
+  return {
+    lead: { x: e.cx + ux * e.a, y: e.cy + uy * e.a },
+    tail: { x: e.cx - ux * e.a, y: e.cy - uy * e.a },
+    side: { x: e.cx - uy * e.b, y: e.cy + ux * e.b },
+    center: { x: e.cx, y: e.cy },
+  };
+}
+
+function insideAxisEllipse(q, e = S.ax) {
+  const dx = q.x - e.cx, dy = q.y - e.cy;
+  const x = dx * Math.cos(e.th) + dy * Math.sin(e.th);
+  const y = -dx * Math.sin(e.th) + dy * Math.cos(e.th);
+  return (x / e.a) ** 2 + (y / e.b) ** 2 <= 1;
+}
+
+// 앱처럼 핀치를 시작한 곳에서 가장 가까운 손잡이를 잡는다. 손잡이에서 멀고 타원 안쪽이면 타원을 옮긴다
+function axisTargetAt(q) {
+  const hs = axisHandles();
+  let best = null, bestD = Infinity;
+  for (const key of ["lead", "tail", "side"]) {
+    const d = dist(q, hs[key]);
+    if (d < bestD) { best = key; bestD = d; }
+  }
+  if (bestD > 36 && (insideAxisEllipse(q) || dist(q, hs.center) < bestD)) return "center";
+  return best;
+}
+
+function axisFit() {
+  const s = AXIS_STAIN, e = S.ax;
+  const turn = Math.abs(wrap(e.th - rad(s.deg)));
+  const checks = [
+    Math.hypot(e.cx - s.x, e.cy - s.y) < AXIS_FIT.center,
+    Math.min(turn, Math.PI - turn) < AXIS_FIT.angle, // 장축은 앞뒤를 가리지 않는다
+    Math.abs(e.a - s.a) / s.a < AXIS_FIT.major,
+    Math.abs(e.b - s.b) / s.b < AXIS_FIT.minor,
+  ];
+  return { count: checks.filter(Boolean).length, ok: checks.every(Boolean) };
+}
+
+const axisImpact = () => Math.round((Math.asin(clamp(S.ax.b / S.ax.a, 0, 1)) * 180) / Math.PI);
+
+function moveAxisHandle(p) {
+  const d = S.ax.drag, e0 = d.start;
+  const q = axisToLocal(p);
+  const h = { x: d.h0.x + (q.x - d.p0.x) * AXIS_GAIN, y: d.h0.y + (q.y - d.p0.y) * AXIS_GAIN };
+  const ux = Math.cos(e0.th), uy = Math.sin(e0.th);
+  if (d.target === "center") {
+    S.ax.cx = h.x;
+    S.ax.cy = h.y;
+  } else if (d.target === "lead") {
+    S.ax.th = Math.atan2(h.y - e0.cy, h.x - e0.cx);
+  } else if (d.target === "tail") {
+    // 반대쪽 끝(Leading edge)은 그대로 두고 끄는 쪽만 늘이거나 줄인다
+    const lx = e0.cx + ux * e0.a, ly = e0.cy + uy * e0.a;
+    const length = clamp(-((h.x - lx) * ux + (h.y - ly) * uy), 2 * e0.b, 400);
+    S.ax.a = length / 2;
+    S.ax.cx = lx - ux * S.ax.a;
+    S.ax.cy = ly - uy * S.ax.a;
+  } else {
+    const nx = -uy, ny = ux;
+    const ox = e0.cx - nx * e0.b, oy = e0.cy - ny * e0.b;
+    const width = clamp((h.x - ox) * nx + (h.y - oy) * ny, 16, 2 * e0.a);
+    S.ax.b = width / 2;
+    S.ax.cx = ox + nx * S.ax.b;
+    S.ax.cy = oy + ny * S.ax.b;
+  }
+}
+
+function overlapArea(a, b) {
+  const w = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+  const h = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+  return w > 0 && h > 0 ? w * h : 0;
 }
 
 function stickerAligned() {
@@ -705,10 +884,26 @@ function acceptsInput() {
 function pinchStart(p) {
   S.lastActivity = performance.now();
   if (!acceptsInput()) return;
+  if (S.stage === "click" && S.clickNext >= TOOLS.length) {
+    // 목록 위에서 맞대면, 움직이면 스크롤하고 그대로 떼면 그 줄을 누른다
+    const v = $("scrollView").getBoundingClientRect();
+    if (p.x >= v.left && p.x <= v.right && p.y >= v.top && p.y <= v.bottom) {
+      const row = hitUI(p);
+      S.sc.drag = { y0: p.y, s0: S.sc.y, moved: false, row, lastY: p.y, lastT: performance.now() };
+      S.sc.vel = 0;
+      row?.classList.add("pressed");
+      return;
+    }
+  }
   const el = hitUI(p);
   if (el) {
     const hit = el.dataset.hit;
     if (hit.startsWith("tile:")) return grabTile(hit.slice(5));
+    if (hit === "winbar") {
+      S.cl.moving = { p0: { x: p.x, y: p.y }, w0: { ...S.cl.win } };
+      el.classList.add("pressed");
+      return;
+    }
     if (el.classList.contains("disabled")) return;
     S.pressed = el;
     el.classList.add("pressed");
@@ -717,12 +912,24 @@ function pinchStart(p) {
   switch (S.stage) {
     case "click":
       ripple(p.x, p.y, "miss");
-      say("버튼 위에서 맞대 보세요.", "warn");
+      say(S.clickNext >= TOOLS.length ? "목록 위에서 맞대 보세요." : "버튼 위에서 맞대 보세요.", "warn");
       break;
     case "cluster":
       if (S.cl.step === "draw") S.cl.drawing = { x0: p.x, y0: p.y, x1: p.x, y1: p.y };
-      else if (S.cl.step === "classify") say("오른쪽 창의 버튼을 눌러 보세요.", "warn");
+      else if (S.cl.step === "move") say("창 아래 흰 막대를 집어 보세요.", "warn");
+      else if (S.cl.step === "classify") say("창의 버튼을 눌러 보세요.", "warn");
       break;
+    case "axis": {
+      const q = axisToLocal(p);
+      if (Math.abs(q.x) > AXIS_PANEL.w / 2 || Math.abs(q.y) > AXIS_PANEL.h / 2) {
+        ripple(p.x, p.y, "miss");
+        say("확대창 안에서 맞대 보세요.", "warn");
+        break;
+      }
+      const target = axisTargetAt(q);
+      S.ax.drag = { target, p0: q, start: { ...S.ax, drag: null }, h0: axisHandles()[target] };
+      break;
+    }
     case "sticker":
       if (S.st.step === "place") {
         say("오른쪽 창에서 ‘방향 화살표’를 집어 보세요.", "warn");
@@ -762,6 +969,26 @@ function grabTile(type) {
 }
 
 function pinchMove(p) {
+  if (S.sc?.drag) {
+    const d = S.sc.drag;
+    const now = performance.now();
+    if (!d.moved && Math.abs(p.y - d.y0) > 10) {
+      d.moved = true;
+      d.row?.classList.remove("pressed");
+    }
+    if (d.moved) {
+      // 손을 올리면 목록도 따라 올라가 아래 항목이 나온다
+      S.sc.y = clamp(d.s0 - (p.y - d.y0), 0, scrollMax());
+      S.sc.vel = -(p.y - d.lastY) / Math.max(now - d.lastT, 1);
+    }
+    d.lastY = p.y;
+    d.lastT = now;
+  }
+  if (S.cl?.moving) {
+    const m = S.cl.moving;
+    S.cl.win = { x: m.w0.x + p.x - m.p0.x, y: m.w0.y + p.y - m.p0.y };
+  }
+  if (S.ax?.drag) moveAxisHandle(p);
   if (S.cl?.drawing) {
     S.cl.drawing.x1 = p.x;
     S.cl.drawing.y1 = p.y;
@@ -776,6 +1003,25 @@ function pinchMove(p) {
 
 function pinchEnd(p) {
   S.lastActivity = performance.now();
+  if (S.sc?.drag) {
+    const d = S.sc.drag;
+    S.sc.drag = null;
+    d.row?.classList.remove("pressed");
+    if (!d.moved && d.row && acceptsInput()) uiTap(d.row.dataset.hit);
+    return;
+  }
+  if (S.cl?.moving) {
+    S.cl.moving = null;
+    $("classBar").classList.remove("pressed");
+    const win = $("classWindow");
+    const covered = overlapArea({ x: S.cl.win.x, y: S.cl.win.y, w: win.offsetWidth, h: win.offsetHeight }, S.cl.rect) / (S.cl.rect.w * S.cl.rect.h);
+    if (covered > 0.15) say("아직 혈흔을 가려요. 조금 더 옮겨 보세요.", "warn");
+    else if (S.cl.step === "move") {
+      S.cl.step = "classify";
+      say("잘 옮겼어요! 이제 혈흔 유형을 골라요.", "ok");
+    }
+    return;
+  }
   if (S.pressed) {
     const el = S.pressed;
     el.classList.remove("pressed");
@@ -807,6 +1053,9 @@ function pinchEnd(p) {
   } else if (S.stage === "sticker" && S.st.rotating) {
     S.st.rotating = false;
     if (stickerAligned()) say("방향이 맞았어요. ✓를 누르세요.", "ok");
+  } else if (S.stage === "axis" && S.ax.drag) {
+    S.ax.drag = null;
+    if (axisFit().ok) say("잘 맞았어요! ‘측정 완료’를 누르세요.", "ok");
   } else if (S.stage === "string" && S.dragging != null) {
     const id = S.dragging;
     S.dragging = null;
@@ -828,9 +1077,10 @@ function finishGroupRect(r) {
   if (inside.length > groupIn) return say("방향이 다른 혈흔은 빼고 그려 주세요.", "warn");
   if (groupIn < 3) return say(`같은 방향 혈흔 ${3 - groupIn}개가 아직 밖에 있어요. 3개가 다 들어오게 그려 주세요.`, "warn");
   S.cl.rect = r;
-  S.cl.step = "classify";
+  S.cl.step = "move";
+  S.cl.win = null;
   ripple(r.x + r.w / 2, r.y + r.h / 2, "ok");
-  say("좋아요! 창에서 혈흔 유형을 골라요.", "ok");
+  say("좋아요! 그런데 창이 혈흔을 가려요.", "ok");
 }
 
 // 손이 카메라 밖으로 나가면 잡고 있던 것을 내려놓는다 (앱의 pinchCancelled와 같다)
@@ -844,6 +1094,9 @@ function pinchCancel() {
   if (S.cl?.drawing) { S.cl.drawing = null; lost("그리기를 멈췄어요"); }
   if (S.st?.dragging) { S.st.dragging = false; lost("스티커를 놓쳤어요"); }
   if (S.st?.rotating) S.st.rotating = false;
+  if (S.sc?.drag) { S.sc.drag.row?.classList.remove("pressed"); S.sc.drag = null; }
+  if (S.cl?.moving) { S.cl.moving = null; $("classBar").classList.remove("pressed"); }
+  if (S.ax?.drag) S.ax.drag = null;
 }
 
 function handleAt(p) {
@@ -911,8 +1164,9 @@ function beginPractice() {
 function progress() {
   switch (S.stage) {
     case "pinch": return S.pinchCount;
-    case "click": return S.clickNext;
-    case "cluster": return (S.cl.rect ? 1 : 0) + (S.cl.category ? 1 : 0) + (S.cl.created ? 1 : 0);
+    case "click": return S.clickNext + (S.sc.picked != null ? 1 : 0);
+    case "cluster": return (S.cl.rect ? 1 : 0) + (S.cl.step === "classify" || S.cl.step === "done" ? 1 : 0) + (S.cl.category ? 1 : 0) + (S.cl.created ? 1 : 0);
+    case "axis": return axisFit().count;
     case "sticker": return { place: 0, select: 1, rotateBtn: 2, rotate: 3, done: 4 }[S.st.step];
     case "string": return S.locked.size;
     default: return 0;
@@ -925,11 +1179,13 @@ function instruction() {
     case "pinch":
       return byMode("엄지와 검지 끝을 가볍게 맞댔다가 떼세요. 3번 해 볼게요.", "클릭이 손가락 맞대기를 대신해요. 아무 곳이나 3번 클릭해 보세요.");
     case "click": {
+      if (S.clickNext >= TOOLS.length) return byMode(`목록을 집은 채로 손을 위로 올리면 아래 항목이 나와요. ‘${SCROLL_TARGET}’을 찾아 맞댔다 떼세요.`, `목록을 누른 채 위로 끌거나 휠을 굴려 내리고, ‘${SCROLL_TARGET}’을 찾아 클릭하세요.`);
       const t = TOOLS[Math.min(S.clickNext, TOOLS.length - 1)];
       return byMode(`빛나는 ‘${t.label}’ 버튼을 가리켜 밝아지면 맞댔다 떼세요. 도구 3개를 차례로 눌러요.`, `빛나는 ‘${t.label}’ 버튼을 클릭하세요. 도구 3개를 차례로 눌러요.`);
     }
     case "cluster":
       if (S.cl.step === "draw") return byMode("같은 쪽으로 날아간 혈흔 3개를, 맞댄 채 대각선으로 움직여 사각형으로 감싸세요.", "같은 쪽으로 날아간 혈흔 3개를, 누른 채 대각선으로 끌어 사각형으로 감싸세요.");
+      if (S.cl.step === "move") return byMode("창이 혈흔을 가려요. 창 아래 흰 막대를 집은 채로 옆으로 옮기세요.", "창이 혈흔을 가려요. 창 아래 흰 막대를 누른 채로 옆으로 끌어 옮기세요.");
       if (!S.cl.category) return "창에서 대분류를 하나 고르세요. 세부 유형은 골라도 되고 안 골라도 돼요.";
       return "이제 ‘그룹 생성’을 누르세요.";
     case "sticker":
@@ -942,6 +1198,9 @@ function instruction() {
           return byMode("링 위 흰 손잡이를 집고 둘레를 따라 돌려, 화살표가 혈흔 꼬리 쪽을 가리키게 하세요.", "링 위 흰 손잡이를 누른 채 둘레를 따라 돌려, 화살표가 혈흔 꼬리 쪽을 가리키게 하세요.");
         default: return "";
       }
+    case "axis":
+      if (axisFit().ok) return `잘 맞았어요. 계산된 충돌각은 ${axisImpact()}°예요. ‘측정 완료’를 누르세요.`;
+      return "타원을 혈흔 몸통에 맞추세요. 노란 점은 돌리고, 끝 흰 점은 길이, 옆 흰 점은 폭을 바꿔요. 안쪽을 끌면 옮겨져요.";
     case "string":
       return byMode("혈흔 가운데 흰 점을 집은 채로 손을 옮겨, 점선 원 안에서 떼세요. 줄 3개를 이어요.", "혈흔 가운데 흰 점을 누른 채로 끌어, 점선 원 안에서 놓으세요. 줄 3개를 이어요.");
     default:
@@ -988,9 +1247,13 @@ function renderCard() {
 function syncUI() {
   const st = S.stage;
   const live = !S.transitioning;
-  $("clickScene").hidden = st !== "click";
+  const scrolling = st === "click" && S.clickNext >= TOOLS.length;
+  $("clickScene").hidden = st !== "click" || scrolling;
+  $("scrollWin").hidden = !scrolling;
   const classWin = $("classWindow");
-  classWin.hidden = !(st === "cluster" && S.cl.step === "classify");
+  classWin.hidden = !(st === "cluster" && (S.cl.step === "move" || S.cl.step === "classify"));
+  $("classBar").hidden = classWin.hidden;
+  $("axisDone").hidden = st !== "axis";
   $("stickerPanel").hidden = st !== "sticker";
   $("editBar").hidden = !(st === "sticker" && S.st.step === "rotateBtn");
   $("rotateBar").hidden = !(st === "sticker" && S.st.step === "rotate");
@@ -1000,6 +1263,22 @@ function syncUI() {
     const id = el.dataset.hit.slice(5);
     el.classList.toggle("selected", S.toolSelected === id);
     el.classList.toggle("target", st === "click" && live && TOOLS[S.clickNext]?.id === id);
+  }
+  if (scrolling) {
+    for (const el of uiRoot.querySelectorAll("[data-hit^='row:']")) {
+      const i = Number(el.dataset.hit.slice(4));
+      el.classList.toggle("selected", S.sc.picked === i);
+      el.classList.toggle("target", SCROLL_ROWS[i].label === SCROLL_TARGET && S.sc.picked == null);
+    }
+  }
+  if (st === "axis") {
+    const ok = axisFit().ok;
+    const done = $("axisDone");
+    const c = axisCenter();
+    done.style.left = `${c.x}px`;
+    done.style.top = `${c.y + (AXIS_PANEL.h / 2) * U + 16}px`;
+    done.classList.toggle("disabled", !ok);
+    done.classList.toggle("target", ok && live);
   }
   if (st === "cluster") {
     for (const el of uiRoot.querySelectorAll("[data-hit^='cat:']")) el.classList.toggle("selected", el.dataset.hit.slice(4) === S.cl.category);
@@ -1018,17 +1297,18 @@ function syncUI() {
   panel.style.left = `${W - 24 - 300}px`;
   panel.style.top = `${cam.bottom + 16}px`;
   if (!classWin.hidden) {
-    // 카메라 아래 오른쪽에 두고, 카드와 겹칠 만큼 화면이 낮으면 카메라 왼쪽으로 비킨다
     const w = classWin.offsetWidth, h = classWin.offsetHeight;
-    const cardTop = H - 24 - CARD_H;
-    let left = W - 24 - w;
-    let top = cam.bottom + 12;
-    if (top + h > cardTop - 8) {
-      top = Math.max(R.y, cardTop - 16 - h);
-      left = cam.left - 16 - w;
-    }
-    classWin.style.left = `${Math.max(R.x, left)}px`;
-    classWin.style.top = `${top}px`;
+    // 처음에는 일부러 묶은 혈흔 위에 띄워, 창을 옮겨야 보이게 한다
+    if (!S.cl.win) S.cl.win = { x: S.cl.rect.x + S.cl.rect.w / 2 - w / 2, y: S.cl.rect.y + S.cl.rect.h / 2 - h / 2 };
+    // 아래 막대가 카드에 가려지지 않게 화면 안에 둔다
+    S.cl.win.x = clamp(S.cl.win.x, R.x - 20, W - 24 - w);
+    S.cl.win.y = clamp(S.cl.win.y, R.y - 20, H - 24 - CARD_H - h - 44);
+    classWin.style.left = `${S.cl.win.x}px`;
+    classWin.style.top = `${S.cl.win.y}px`;
+    const bar = $("classBar");
+    bar.style.left = `${S.cl.win.x + w / 2}px`;
+    bar.style.top = `${S.cl.win.y + h + 8}px`;
+    bar.classList.toggle("target", S.cl.step === "move" && !S.cl.moving && live);
   }
   if (S.st?.placed) {
     $("editBar").style.left = `${S.st.placed.x}px`;
@@ -1220,6 +1500,12 @@ wall.addEventListener("pointercancel", mouseUp);
 wall.addEventListener("pointerleave", () => {
   if (S.mode === "mouse" && !input.pinching) input.visible = false;
 });
+wall.addEventListener("wheel", (e) => {
+  if (S.mode !== "mouse" || S.stage !== "click" || S.clickNext < TOOLS.length) return;
+  e.preventDefault();
+  S.sc.vel = 0;
+  S.sc.y = clamp(S.sc.y + e.deltaY, 0, scrollMax());
+}, { passive: false });
 
 // ---------- 벽 그리기 ----------
 function draw(now) {
@@ -1231,6 +1517,7 @@ function draw(now) {
     case "pinch": drawPinchMeter(); break;
     case "cluster": drawCluster(); break;
     case "sticker": drawStickerScene(now); break;
+    case "axis": drawAxisScene(); break;
     case "string": case "done": drawStringScene(now); break;
   }
   drawRipples(now);
@@ -1286,7 +1573,7 @@ function drawChip(text, x, y, align = "center") {
   ctx.font = `600 ${fs}px ${CANVAS_FONT}`;
   const w = ctx.measureText(text).width + 22 * U;
   const h = fs + 14 * U;
-  const left = align === "center" ? x - w / 2 : x;
+  const left = align === "center" ? x - w / 2 : align === "right" ? x - w : x;
   ctx.fillStyle = "rgba(28,26,29,0.8)";
   ctx.beginPath();
   ctx.roundRect(left, y - h, w, h, h / 2);
@@ -1417,6 +1704,83 @@ function drawStickerScene(now) {
     ctx.restore();
   }
   drawArrow(c.x, c.y, st.angle, { glow: S.hover === "sticker" });
+}
+
+function drawAxisScene() {
+  const c = axisCenter();
+  const pw = AXIS_PANEL.w * U, ph = AXIS_PANEL.h * U;
+  const x0 = c.x - pw / 2, y0 = c.y - ph / 2;
+  // 확대창: 혈흔을 크게 보여 주는 밝은 판과 눈금
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,0.28)";
+  ctx.shadowBlur = 24 * U;
+  ctx.fillStyle = "#ebe6de";
+  ctx.beginPath();
+  ctx.roundRect(x0, y0, pw, ph, 24 * U);
+  ctx.fill();
+  ctx.restore();
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(x0, y0, pw, ph, 24 * U);
+  ctx.clip();
+  ctx.strokeStyle = "rgba(80,60,50,0.09)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let x = x0; x <= x0 + pw; x += 20 * U) { ctx.moveTo(x, y0); ctx.lineTo(x, y0 + ph); }
+  for (let y = y0; y <= y0 + ph; y += 20 * U) { ctx.moveTo(x0, y); ctx.lineTo(x0 + pw, y); }
+  ctx.stroke();
+  const sp = axisToScreen(AXIS_STAIN);
+  drawStain({ x: sp.x, y: sp.y, a: AXIS_STAIN.a * U, b: AXIS_STAIN.b * U, ang: rad(AXIS_STAIN.deg) });
+
+  const e = S.ax;
+  const ec = axisToScreen({ x: e.cx, y: e.cy });
+  const fit = axisFit().ok;
+  ctx.beginPath();
+  ctx.ellipse(ec.x, ec.y, e.a * U, e.b * U, e.th, 0, TAU);
+  ctx.lineWidth = 4.5 * U;
+  ctx.strokeStyle = "rgba(20,14,12,0.4)";
+  ctx.stroke();
+  ctx.lineWidth = 2.4 * U;
+  ctx.strokeStyle = fit ? "#3fbf75" : "#ffffff";
+  ctx.stroke();
+  const hs = axisHandles();
+  const lead = axisToScreen(hs.lead), tail = axisToScreen(hs.tail);
+  ctx.setLineDash([6 * U, 5 * U]);
+  ctx.lineWidth = 1.5 * U;
+  ctx.strokeStyle = "rgba(255,255,255,0.8)";
+  ctx.beginPath();
+  ctx.moveTo(tail.x, tail.y);
+  ctx.lineTo(lead.x, lead.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  const active = S.ax.drag?.target ?? S.hover;
+  if (active === "center") {
+    ctx.fillStyle = "rgba(255,255,255,0.22)";
+    ctx.beginPath();
+    ctx.ellipse(ec.x, ec.y, e.a * U, e.b * U, e.th, 0, TAU);
+    ctx.fill();
+  }
+  for (const [key, color, label] of [["lead", "#ffd60a", "돌리기"], ["tail", "#ffffff", "길이"], ["side", "#ffffff", "폭"]]) {
+    const h = axisToScreen(hs[key]);
+    const on = active === key;
+    ctx.save();
+    if (on) { ctx.shadowColor = "rgba(255,255,255,0.95)"; ctx.shadowBlur = 16 * U; }
+    ctx.beginPath();
+    ctx.arc(h.x, h.y, (on ? 12 : 9) * U, 0, TAU);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.lineWidth = 2 * U;
+    ctx.strokeStyle = "rgba(30,20,20,0.55)";
+    ctx.stroke();
+    ctx.restore();
+    const ox = h.x - ec.x, oy = h.y - ec.y, l = Math.hypot(ox, oy) || 1;
+    drawChip(label, h.x + (ox / l) * 34 * U, h.y + (oy / l) * 34 * U + 11 * U);
+  }
+  ctx.restore();
+  drawChip("혈흔 1 · 확대", x0 + 16 * U, y0 + 40 * U, "left");
+  drawChip(`계산된 충돌각 ${axisImpact()}°`, x0 + pw - 16 * U, y0 + ph - 14 * U, "right");
 }
 
 function drawString(x0, y0, x1, y1) {
@@ -1625,6 +1989,9 @@ function updateHover() {
   } else if (S.stage === "sticker" && S.st.placed) {
     if (S.st.step === "select" && dist(input, S.st.placed) < 48 * U) S.hover = "sticker";
     if (S.st.step === "rotate" && dist(input, stickerHandle()) < 40 * U) S.hover = "handle";
+  } else if (S.stage === "axis") {
+    const q = axisToLocal(input);
+    if (Math.abs(q.x) <= AXIS_PANEL.w / 2 && Math.abs(q.y) <= AXIS_PANEL.h / 2) S.hover = axisTargetAt(q);
   }
 }
 
@@ -1639,13 +2006,17 @@ function renderPointer() {
   if (!ghostEl.hidden) ghostEl.style.transform = `translate(${input.x}px, ${input.y}px)`;
 }
 
+let lastFrameAt = 0;
 function frame(now) {
+  const dt = Math.min(lastFrameAt ? now - lastFrameAt : 16.7, 50);
+  lastFrameAt = now;
   if (W !== innerWidth || H !== innerHeight) layout();
   if (S.mode === "camera") trackHand(now);
   // 다음 사람이 바로 시작할 수 있게, 오래 손이 안 보이면 처음 화면으로
   if (S.mode === "camera" && STAGES.includes(S.stage) && now - S.lastActivity > IDLE_RESET_MS) enterStage("intro");
   updateHover();
   syncUI();
+  updateScroll(dt);
   draw(now);
   renderPointer();
   drawCamera();
@@ -1711,6 +2082,7 @@ addEventListener("keydown", (e) => {
 });
 addEventListener("resize", layout);
 
+$("scrollContent").innerHTML = SCROLL_ROWS.map((r, i) => `<div class="vbtn row" data-hit="row:${i}"><span>${r.label}</span><small>${r.category}</small></div>`).join("");
 $("catChips").innerHTML = CATEGORIES.map((c) => `<div class="vbtn" data-hit="cat:${c.id}">${c.label}</div>`).join("");
 resetStageState();
 layout();
