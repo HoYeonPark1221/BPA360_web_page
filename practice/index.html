@@ -76,13 +76,13 @@ body.mouse #wall { cursor: none; }
   padding: 3px 10px; border-radius: 999px;
 }
 .info .chip-label { color: var(--ok); background: rgba(134, 227, 168, 0.14); }
-.info h2 { margin: 0; font-family: var(--display); font-size: 22px; line-height: 1.35; font-weight: 700; text-wrap: balance; }
-.info ol, .info ul { margin: 0; padding-left: 20px; display: grid; gap: 10px; font-size: 15px; line-height: 1.45; color: var(--ink-2); }
+.info h2 { margin: 0; font-family: var(--display); font-size: 22px; line-height: 1.35; font-weight: 700; text-wrap: balance; word-break: keep-all; }
+.info ol, .info ul { margin: 0; padding-left: 20px; display: grid; gap: 10px; font-size: 15px; line-height: 1.45; color: var(--ink-2); word-break: keep-all; }
 .info li::marker { color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .info li b { display: block; color: var(--ink); font-size: 15.5px; }
 .info-tip { display: grid; gap: 6px; padding-top: 12px; border-top: 1px solid var(--edge); }
 .info-tip .chip-label { color: var(--focus); background: rgba(159, 216, 255, 0.14); }
-.info-tip p { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--ink-2); }
+.info-tip p { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--ink-2); word-break: keep-all; }
 
 /* 카메라 */
 .cam {
@@ -229,6 +229,10 @@ button:disabled { opacity: 0.55; cursor: progress; }
 .fine { margin: 0; font-size: 13.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .done-sub { margin: 6px 0 0; font-size: 13.5px; font-weight: 600; color: var(--ink-3); }
 
+/* 단계가 7개라 좁은 화면에서는 카메라 창과 겹친다: 지금 단계만 이름을 보이고 나머지는 번호만 */
+@media (max-width: 1400px) {
+  .steps li:not(.current) { font-size: 0; gap: 0; padding: 8px; }
+}
 @media (max-width: 1180px) {
   .info { width: 250px; padding: 18px; }
   .info h2 { font-size: 19px; }
@@ -344,11 +348,12 @@ button:disabled { opacity: 0.55; cursor: progress; }
 
 <ol class="steps glass" id="steps">
   <li data-stage="pinch"><span class="n">1</span>맞대기</li>
-  <li data-stage="click"><span class="n">2</span>누르기</li>
-  <li data-stage="cluster"><span class="n">3</span>그룹 만들기</li>
-  <li data-stage="sticker"><span class="n">4</span>스티커</li>
-  <li data-stage="axis"><span class="n">5</span>타원 맞추기</li>
-  <li data-stage="string"><span class="n">6</span>줄 잇기</li>
+  <li data-stage="look"><span class="n">2</span>보고 고르기</li>
+  <li data-stage="click"><span class="n">3</span>누르기</li>
+  <li data-stage="cluster"><span class="n">4</span>그룹 만들기</li>
+  <li data-stage="sticker"><span class="n">5</span>스티커</li>
+  <li data-stage="axis"><span class="n">6</span>타원 맞추기</li>
+  <li data-stage="string"><span class="n">7</span>줄 잇기</li>
 </ol>
 
 <aside class="info glass" id="info" hidden>
@@ -372,7 +377,7 @@ button:disabled { opacity: 0.55; cursor: progress; }
 
 <section class="card glass" id="card" hidden>
   <div class="card-head">
-    <p class="eyebrow" id="cardStep">1 / 6</p>
+    <p class="eyebrow" id="cardStep">1 / 7</p>
     <div class="pips" id="pips"></div>
   </div>
   <h1 id="cardTitle"></h1>
@@ -389,11 +394,12 @@ button:disabled { opacity: 0.55; cursor: progress; }
 <div class="overlay" id="intro">
   <div class="panel">
     <p class="eyebrow">BPA 360 · 체험 전 연습</p>
-    <h2>Vision Pro를 쓰기 전에<br>손동작 6가지를 연습해 봐요</h2>
-    <p class="lead">앱에서 하는 그대로 버튼을 누르고, 혈흔을 묶고, 스티커를 붙이고, 타원을 맞추고, 줄을 이어요. 3분쯤이면 끝나요.</p>
+    <h2>Vision Pro를 쓰기 전에<br>조작 7가지를 연습해 봐요</h2>
+    <p class="lead">앱에서 하는 그대로 눈으로 고르고, 버튼을 누르고, 혈흔을 묶고, 스티커를 붙이고, 타원을 맞추고, 줄을 이어요. 4분쯤이면 끝나요.</p>
     <ul class="howto">
       <li><b>오른손을 카메라 앞에</b> 들어 주세요. 오른쪽 위 화면에 손이 보이면 준비 끝이에요.</li>
       <li>엄지와 검지 사이의 <b>흰 원</b>이 손을 따라다니는 커서예요.</li>
+      <li>2단계에서는 카메라가 <b>눈이 보는 곳</b>을 읽어요. 화면 정면에 앉아 주세요.</li>
     </ul>
     <div class="actions">
       <button id="startCam" class="primary" type="button">카메라로 시작</button>
@@ -426,6 +432,7 @@ button:disabled { opacity: 0.55; cursor: progress; }
 <script type="module">
 const MP = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
 const MODEL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
+const FACE_MODEL = "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
 
 // 핀치 판정: 엄지·검지 끝 거리를 손바닥 크기(손목~중지 뿌리)로 나눈 값
 const PINCH_ON = 0.3;
@@ -443,9 +450,9 @@ const CARD_H = 200;
 // 스티커 방향이 이 각도 안이면 맞았다고 본다
 const ALIGN_TOLERANCE = (12 * Math.PI) / 180;
 
-const STAGES = ["pinch", "click", "cluster", "sticker", "axis", "string"];
-const GOAL = { pinch: 3, click: 3, cluster: 4, sticker: 4, axis: 4, string: 3 };
-const TITLES = { pinch: "손가락 맞대기", click: "버튼 누르기", cluster: "그룹 만들기", sticker: "스티커 붙이고 돌리기", axis: "타원 맞추기", string: "줄 잇기" };
+const STAGES = ["pinch", "look", "click", "cluster", "sticker", "axis", "string"];
+const GOAL = { pinch: 3, look: 3, click: 3, cluster: 4, sticker: 4, axis: 4, string: 3 };
+const TITLES = { pinch: "손가락 맞대기", look: "눈으로 보고 고르기", click: "버튼 누르기", cluster: "그룹 만들기", sticker: "스티커 붙이고 돌리기", axis: "타원 맞추기", string: "줄 잇기" };
 const TOOLS = [
   { id: "grouping", label: "그룹화" },
   { id: "sticker", label: "스티커" },
@@ -466,6 +473,22 @@ const AXIS_STAIN = { x: 0, y: 0, a: 100, b: 48, deg: -160 };
 const AXIS_GAIN = 0.6;
 // 이 안으로 들어오면 맞춘 것으로 본다: 가운데 거리(U), 축 각도, 장축·단축 길이 비율
 const AXIS_FIT = { center: 14, angle: (8 * Math.PI) / 180, major: 0.12, minor: 0.15 };
+// 보고 고르기: 눈 설정 점은 가운데에서 시작해 둘레를 한 바퀴 돈다 (보고 고르기 영역 안의 비율)
+const CALIB = [{ u: 0.5, v: 0.5 }, ...Array.from({ length: 8 }, (_, k) => {
+  const a = -Math.PI / 2 + (k * Math.PI) / 4;
+  return { u: 0.5 + 0.42 * Math.cos(a), v: 0.5 + 0.4 * Math.sin(a) };
+})];
+// 점이 나타나고 눈이 옮겨 가는 동안은 빼고, 그 뒤부터 맞댈 때까지의 눈 모양만 쓴다
+const CALIB_SETTLE_MS = 350;
+const CALIB_MIN_SAMPLES = 5;
+// 눈 모양 값을 화면 위치로 바꾸는 회귀의 규제 세기 (클수록 덜 흔들리고 덜 따라온다)
+const GAZE_RIDGE = 0.05;
+// 웹캠 시선은 부정확하니 가장 가까운 혈흔에 붙인다: 붙는 거리(장면 너비 비율), 바꿀 때 더 가까워야 하는 비율, 머무는 시간
+const LOOK_REACH = 0.3;
+const LOOK_SWITCH = 0.8;
+const LOOK_DWELL_MS = 120;
+const FACE_LOST_MS = 300;
+const LOOK_ORDER = [1, 3, 2];
 // 왼쪽 창: 이 손동작으로 앱에서 무엇을 하는지
 const INFO = {
   pinch: {
@@ -473,6 +496,12 @@ const INFO = {
     ordered: false,
     items: [["버튼 누르기", "도구 바꾸기, 다음, 완료"], ["그룹 만들기", "같은 방향 혈흔을 사각형으로 묶기"], ["스티커", "방향 스티커와 측정자를 붙이고 돌리기"], ["줄 연결법", "혈흔에서 줄을 당겨 긋기"]],
     tip: "손을 무릎 위나 몸 옆에 내려 둔 채로 맞대도 알아봐요. 허공을 누를 필요는 없어요.",
+  },
+  look: {
+    title: "눈으로 가리키고, 맞대서 골라요",
+    ordered: true,
+    items: [["눈 설정", "기기를 처음 쓰면 점을 하나씩 보고 맞대는 설정부터 해요"], ["바라보기", "혈흔이나 버튼을 보면 그것만 살짝 밝아져요"], ["고르기", "밝아진 채로 엄지와 검지를 맞대요"]],
+    tip: "기기에는 시선 커서가 없어요. 바라본 것만 밝아지니, 맞대는 순간까지 고를 것을 계속 보세요.",
   },
   click: {
     title: "버튼은 보고 맞대서 눌러요",
@@ -516,6 +545,12 @@ const CLUSTER_STAINS = [
   { id: "B3", u: 0.5, v: 0.86, deg: 215, width: 3.5, length: 6.6 },
 ];
 const STICKER_STAIN = { u: 0.3, v: 0.36, deg: -40, width: 4.3, length: 9.4 };
+// 보고 고르기 혈흔 (보고 고르기 영역 안의 비율): 웹캠 시선은 좌우가 위아래보다 정확해서 좌우로 멀리 떨어뜨린다
+const LOOK_STAINS = [
+  { id: 1, u: 0.14, v: 0.45, deg: 25, width: 6, length: 12 },
+  { id: 2, u: 0.5, v: 0.75, deg: -70, width: 6, length: 11 },
+  { id: 3, u: 0.86, v: 0.47, deg: 160, width: 6, length: 12 },
+];
 const STRING_ORIGIN = { u: 0.46, v: 0.45 };
 // 폭·길이(mm)로 충돌각을 구하고, 긴 축이 수렴점을 향하게 놓는다
 const STRING_STAINS = [
@@ -546,7 +581,7 @@ const inRect = (p, r) => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= 
 
 // ---------- 상태 ----------
 const S = {
-  stage: "intro", // intro | pinch | click | cluster | sticker | axis | string | done
+  stage: "intro", // intro | pinch | look | click | cluster | sticker | axis | string | done
   mode: null, // camera | mouse
   startedAt: 0,
   lastActivity: 0,
@@ -560,8 +595,10 @@ const S = {
   cl: null,
   st: null,
   ax: null, // 타원 (확대창 좌표)
+  lk: null, // 보고 고르기
   locked: new Set(),
   dragging: null,
+  showGaze: false, // 운영자용: G로 시선 위치 보기
 };
 const input = { x: 0, y: 0, visible: false, pinching: false, amount: 0, lastSeen: 0, history: [] };
 const ripples = [];
@@ -574,6 +611,10 @@ function resetStageState() {
   S.cl = { step: "draw", drawing: null, rect: null, win: null, moving: null, category: null, pattern: null, created: false };
   S.st = { step: "place", dragging: false, placed: null, angle: 0, angleBeforeRotate: 0, handleAngle: -Math.PI / 4, rotating: false };
   S.ax = { cx: 36, cy: 28, a: 70, b: 70, th: 0, drag: null };
+  // step: calib(눈 설정) | pick. samples는 눈 모양 값과 그때 보던 장면 위치
+  S.lk = { step: "calib", calibIndex: 0, dotAt: 0, samples: [], model: null, gaze: null, focus: null, pending: null, picked: [] };
+  gazeX.reset();
+  gazeY.reset();
   S.locked = new Set();
   S.dragging = null;
   renderPatterns();
@@ -582,10 +623,12 @@ function resetStageState() {
 // ---------- 화면 크기와 벽 ----------
 let W = 0, H = 0, U = 1;
 const R = { x: 0, y: 0, w: 0, h: 0 }; // 연습 장면 영역
+const LA = { x: 0, y: 0, w: 0, h: 0 }; // 보고 고르기 영역: 장면 중 오른쪽 위 카메라 창 아래
 const origin = { x: 0, y: 0 };
 const dropZone = { x: 0, y: 0 };
 let wallTexture = null;
 const at = (u, v) => ({ x: R.x + u * R.w, y: R.y + v * R.h });
+const lookAt = (u, v) => ({ x: LA.x + u * LA.w, y: LA.y + v * LA.h });
 const RING = () => 64 * U;
 const DROP_R = () => 56 * U;
 
@@ -607,6 +650,11 @@ function layout() {
   R.y = 84;
   R.w = Math.max(240, W - 24 - R.x);
   R.h = Math.max(240, H - 24 - CARD_H - 16 - R.y);
+  const camBottom = $("cam").getBoundingClientRect().bottom;
+  LA.x = R.x;
+  LA.w = R.w;
+  LA.y = clamp(camBottom > 0 ? camBottom + 16 : R.y, R.y, R.y + R.h * 0.45);
+  LA.h = R.y + R.h - LA.y;
   for (const s of CLUSTER_STAINS) {
     Object.assign(s, at(s.u, s.v));
     s.ang = rad(s.deg);
@@ -618,6 +666,11 @@ function layout() {
   dropZone.x = STICKER_STAIN.x;
   dropZone.y = STICKER_STAIN.y + 115 * U;
   if (S.st?.placed) Object.assign(S.st.placed, dropZone);
+  for (const s of LOOK_STAINS) {
+    Object.assign(s, lookAt(s.u, s.v));
+    s.ang = rad(s.deg);
+    sizeStain(s);
+  }
   Object.assign(origin, at(STRING_ORIGIN.u, STRING_ORIGIN.v));
   for (const s of STRING_STAINS) {
     Object.assign(s, at(s.u, s.v));
@@ -847,6 +900,9 @@ function pinchStart(p) {
     return;
   }
   switch (S.stage) {
+    case "look":
+      lookPinch(p);
+      break;
     case "click":
       ripple(p.x, p.y, "miss");
       say("버튼 위에서 맞대 보세요.", "warn");
@@ -1078,6 +1134,7 @@ function beginPractice() {
 function progress() {
   switch (S.stage) {
     case "pinch": return S.pinchCount;
+    case "look": return S.lk.picked.length;
     case "click": return S.clickNext;
     case "cluster": return (S.cl.rect ? 1 : 0) + (S.cl.step === "classify" || S.cl.step === "done" ? 1 : 0) + (S.cl.category ? 1 : 0) + (S.cl.created ? 1 : 0);
     case "axis": return axisFit().count;
@@ -1092,6 +1149,18 @@ function instruction() {
   switch (S.stage) {
     case "pinch":
       return byMode("엄지와 검지 끝을 가볍게 맞댔다가 떼세요. 3번 해 볼게요.", "클릭이 손가락 맞대기를 대신해요. 아무 곳이나 3번 클릭해 보세요.");
+    case "look": {
+      if (S.lk.step === "calib") {
+        if (faceStatus !== "ready") return "눈 인식 모델을 불러오는 중이에요. 잠깐만 기다려 주세요.";
+        if (!face.visible) return "얼굴이 카메라에 보이게 화면 정면에 앉아 주세요.";
+        return `눈 설정이에요. 흰 점을 바라본 채로 맞대세요. 손은 얼굴을 가리지 않게 아래쪽에 두세요. (${S.lk.calibIndex + 1} / ${CALIB.length})`;
+      }
+      const want = LOOK_ORDER[Math.min(S.lk.picked.length, LOOK_ORDER.length - 1)];
+      if (S.mode === "mouse") return `‘혈흔 ${want}’ 위에 마우스를 올려 밝아지면 클릭하세요. 기기에서는 마우스 대신 눈으로 가리켜요.`;
+      if (faceStatus === "failed") return `눈 인식을 불러오지 못해 손으로 대신 가리켜요. ‘혈흔 ${want}’ 쪽을 가리켜 밝아지면 맞대세요.`;
+      if (!face.visible) return "얼굴이 카메라에 보이게 화면 정면에 앉아 주세요.";
+      return `‘혈흔 ${want}’ 쪽을 바라보세요. 밝아지면 계속 바라본 채로 맞대세요.`;
+    }
     case "click": {
       const t = TOOLS[Math.min(S.clickNext, TOOLS.length - 1)];
       return byMode(`빛나는 ‘${t.label}’ 버튼을 가리켜 밝아지면 맞댔다 떼세요. 도구 3개를 차례로 눌러요.`, `빛나는 ‘${t.label}’ 버튼을 클릭하세요. 도구 3개를 차례로 눌러요.`);
@@ -1286,7 +1355,7 @@ async function initCamera(onProgress) {
       }
       onProgress("손 인식 모델을 불러오는 중…");
       try {
-        const { FilesetResolver, HandLandmarker } = await import(`${MP}/vision_bundle.mjs`);
+        const { FilesetResolver, HandLandmarker, FaceLandmarker } = await import(`${MP}/vision_bundle.mjs`);
         const fileset = await FilesetResolver.forVisionTasks(`${MP}/wasm`);
         const options = (delegate) => ({
           baseOptions: { modelAssetPath: MODEL, delegate },
@@ -1301,6 +1370,8 @@ async function initCamera(onProgress) {
         } catch {
           landmarker = await HandLandmarker.createFromOptions(fileset, options("CPU"));
         }
+        // 눈은 2단계부터 쓰니, 손 모델로 먼저 시작하고 얼굴 모델은 뒤에서 받는다
+        if (faceStatus === "idle" || faceStatus === "failed") loadFace(FaceLandmarker, fileset);
       } catch {
         throw new Error("model");
       }
@@ -1374,6 +1445,255 @@ function loseHand() {
   }
 }
 
+// ---------- 카메라 시선 추적 ----------
+// Face Landmarker 478점 중 눈 모서리·눈꺼풀·홍채 가운데
+const EYES = [
+  { outer: 33, inner: 133, top: 159, bottom: 145, iris: 468 },
+  { outer: 263, inner: 362, top: 386, bottom: 374, iris: 473 },
+];
+let faceLandmarker = null;
+let faceStatus = "idle"; // idle | loading | ready | failed
+let latestFace = null;
+let lastFaceVideoTime = -1;
+const face = { visible: false, lastSeen: 0, history: [] }; // history: 최근 눈 모양 값 { t, f }
+const gazeX = new OneEuro(0.4, 0.002);
+const gazeY = new OneEuro(0.4, 0.002);
+
+async function loadFace(FaceLandmarker, fileset) {
+  faceStatus = "loading";
+  const options = (delegate) => ({
+    baseOptions: { modelAssetPath: FACE_MODEL, delegate },
+    runningMode: "VIDEO",
+    numFaces: 1,
+    outputFaceBlendshapes: true,
+  });
+  try {
+    try {
+      faceLandmarker = await FaceLandmarker.createFromOptions(fileset, options("GPU"));
+    } catch {
+      faceLandmarker = await FaceLandmarker.createFromOptions(fileset, options("CPU"));
+    }
+    faceStatus = "ready";
+  } catch {
+    faceStatus = "failed";
+  }
+}
+
+function trackFace(now) {
+  if (!faceLandmarker || video.readyState < 2) return;
+  if (video.currentTime !== lastFaceVideoTime) {
+    lastFaceVideoTime = video.currentTime;
+    const result = faceLandmarker.detectForVideo(video, now);
+    latestFace = result.faceLandmarks?.[0] || null;
+    if (latestFace) readFace(latestFace, result.faceBlendshapes?.[0]?.categories || [], now);
+  }
+  if (face.visible && now - face.lastSeen > FACE_LOST_MS) loseFace();
+}
+
+// 눈 모양 값: 눈 안에서 홍채 위치(좌우·위아래), 눈 뜬 정도, 표정 모델의 눈 방향, 고개 돌림
+function faceFeatures(lm, shapes) {
+  const aspect = video.videoWidth / video.videoHeight || 16 / 9;
+  const P = (i) => ({ x: lm[i].x * aspect, y: lm[i].y });
+  let h = 0, v = 0, open = 0;
+  for (const e of EYES) {
+    const o = P(e.outer), n = P(e.inner), c = P(e.iris);
+    let ux = o.x - n.x, uy = o.y - n.y;
+    if (ux < 0) { ux = -ux; uy = -uy; } // 두 눈 모두 화면 오른쪽을 +로
+    const L = Math.hypot(ux, uy) || 1e-3;
+    ux /= L; uy /= L;
+    const dx = c.x - (o.x + n.x) / 2, dy = c.y - (o.y + n.y) / 2;
+    h += (dx * ux + dy * uy) / L / 2;
+    v += (-dx * uy + dy * ux) / L / 2;
+    open += dist(P(e.top), P(e.bottom)) / L / 2;
+  }
+  const b = Object.fromEntries(shapes.map((c) => [c.categoryName, c.score]));
+  const sh = (k) => b[k] || 0;
+  const lookH = (sh("eyeLookOutLeft") + sh("eyeLookInRight") - sh("eyeLookInLeft") - sh("eyeLookOutRight")) / 2;
+  const lookV = (sh("eyeLookUpLeft") + sh("eyeLookUpRight") - sh("eyeLookDownLeft") - sh("eyeLookDownRight")) / 2;
+  const nose = P(1), cheekA = P(234), cheekB = P(454), top = P(10), chin = P(152);
+  const yaw = (nose.x - (cheekA.x + cheekB.x) / 2) / (Math.abs(cheekB.x - cheekA.x) || 1e-3);
+  const pitch = (nose.y - (P(33).y + P(263).y) / 2) / (dist(top, chin) || 1e-3);
+  return { f: [h, v, open, lookH, lookV, yaw, pitch], blink: Math.max(sh("eyeBlinkLeft"), sh("eyeBlinkRight")) };
+}
+
+function readFace(lm, shapes, now) {
+  face.visible = true;
+  face.lastSeen = now;
+  const { f, blink } = faceFeatures(lm, shapes);
+  if (blink > 0.5) return; // 눈 감은 순간은 쓰지 않는다
+  face.history.push({ t: now, f });
+  while (face.history.length && now - face.history[0].t > 1500) face.history.shift();
+  const m = S.lk?.model;
+  if (m) {
+    const q = predictGaze(m, f);
+    const p = lookAt(clamp(q.u, -0.15, 1.15), clamp(q.v, -0.15, 1.15));
+    S.lk.gaze = { x: gazeX.filter(p.x, now), y: gazeY.filter(p.y, now) };
+  }
+}
+
+function loseFace() {
+  face.visible = false;
+  face.history = [];
+  latestFace = null;
+  gazeX.reset();
+  gazeY.reset();
+  if (S.lk) S.lk.gaze = null;
+}
+
+// 연립방정식 A x = b (가우스 소거)
+function solve(A, b) {
+  const n = b.length;
+  const M = A.map((row, i) => [...row, b[i]]);
+  for (let c = 0; c < n; c++) {
+    let p = c;
+    for (let r = c + 1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
+    [M[c], M[p]] = [M[p], M[c]];
+    const d = M[c][c] || 1e-9;
+    for (let r = 0; r < n; r++) {
+      if (r === c) continue;
+      const k = M[r][c] / d;
+      for (let j = c; j <= n; j++) M[r][j] -= k * M[c][j];
+    }
+  }
+  return M.map((row, i) => row[n] / (row[i] || 1e-9));
+}
+
+// 눈 설정에서 모은 값으로 눈 모양 → 장면 위치(u, v) 능형 회귀를 맞춘다
+function fitGaze(samples) {
+  const n = samples.length, k = samples[0].f.length;
+  const mean = Array(k).fill(0), std = Array(k).fill(0);
+  let mu = 0, mv = 0;
+  for (const s of samples) {
+    s.f.forEach((x, j) => { mean[j] += x / n; });
+    mu += s.u / n;
+    mv += s.v / n;
+  }
+  for (const s of samples) s.f.forEach((x, j) => { std[j] += (x - mean[j]) ** 2 / n; });
+  for (let j = 0; j < k; j++) std[j] = Math.sqrt(std[j]) || 1;
+  const A = Array.from({ length: k }, () => Array(k).fill(0));
+  const bu = Array(k).fill(0), bv = Array(k).fill(0);
+  for (const s of samples) {
+    const z = s.f.map((x, j) => (x - mean[j]) / std[j]);
+    for (let i = 0; i < k; i++) {
+      bu[i] += z[i] * (s.u - mu);
+      bv[i] += z[i] * (s.v - mv);
+      for (let j = 0; j < k; j++) A[i][j] += z[i] * z[j];
+    }
+  }
+  for (let i = 0; i < k; i++) A[i][i] += GAZE_RIDGE * n;
+  return { mean, std, mu, mv, wu: solve(A, bu), wv: solve(A, bv) };
+}
+
+function predictGaze(m, f) {
+  let u = m.mu, v = m.mv;
+  f.forEach((x, j) => {
+    const z = (x - m.mean[j]) / m.std[j];
+    u += z * m.wu[j];
+    v += z * m.wv[j];
+  });
+  return { u, v };
+}
+
+// 눈 설정 점마다 예측이 평균 얼마나 빗나가는지 (장면 너비 비율)
+function gazeError(m, samples) {
+  let sum = 0;
+  for (const c of CALIB) {
+    const rows = samples.filter((s) => s.u === c.u && s.v === c.v);
+    if (!rows.length) continue;
+    let u = 0, v = 0;
+    for (const s of rows) { const q = predictGaze(m, s.f); u += q.u / rows.length; v += q.v / rows.length; }
+    sum += Math.hypot((u - c.u) * LA.w, (v - c.v) * LA.h) / LA.w / CALIB.length;
+  }
+  return sum;
+}
+
+function fixationRows(from, to) {
+  return face.history.filter((h) => h.t >= from && h.t <= to).map((h) => h.f);
+}
+
+function updateLook(now) {
+  const lk = S.lk;
+  if (S.mode === "mouse" || faceStatus === "failed") {
+    if (lk.step === "calib") lk.step = "pick";
+  } else if (lk.step === "pick" && !lk.model) {
+    // 마우스로 하다가 카메라로 바꾸면 눈 설정부터 한다
+    Object.assign(lk, { step: "calib", calibIndex: 0, samples: [], focus: null, pending: null });
+  }
+  // 얼굴이 보이고 모델이 준비된 뒤부터 점을 보는 시간으로 센다
+  if (lk.step === "calib" && (faceStatus !== "ready" || !face.visible)) lk.dotAt = now;
+  if (lk.step === "pick") updateLookFocus(now);
+}
+
+function lookPoint() {
+  if (S.mode === "mouse" || faceStatus === "failed") return input.visible ? input : null;
+  return S.lk.gaze;
+}
+
+// 시선에서 가장 가까운 혈흔을 밝힌다. 흔들려도 깜빡이지 않게, 확실히 옮겨 갔을 때만 바꾼다
+function updateLookFocus(now) {
+  const lk = S.lk;
+  const g = lookPoint();
+  const reach = S.mode === "mouse" ? 80 * U : faceStatus === "failed" ? 90 * U : LOOK_REACH * LA.w;
+  let best = null, bestD = Infinity;
+  if (g) for (const s of LOOK_STAINS) {
+    const d = dist(g, s);
+    if (d < bestD) { best = s; bestD = d; }
+  }
+  const next = best && bestD < reach ? best.id : null;
+  if (next === lk.focus) { lk.pending = null; return; }
+  const cur = LOOK_STAINS.find((s) => s.id === lk.focus);
+  const moved = !cur || !g || dist(g, cur) > reach || (best && bestD < dist(g, cur) * LOOK_SWITCH);
+  if (!moved) { lk.pending = null; return; }
+  if (S.mode === "mouse") { lk.focus = next; return; }
+  if (lk.pending?.id !== next) lk.pending = { id: next, t: now };
+  else if (now - lk.pending.t > LOOK_DWELL_MS) { lk.focus = next; lk.pending = null; }
+}
+
+function lookPinch(p) {
+  const lk = S.lk, now = performance.now();
+  if (lk.step === "calib") {
+    const dot = lookAt(CALIB[lk.calibIndex].u, CALIB[lk.calibIndex].v);
+    if (faceStatus !== "ready") return say("눈 인식 모델을 불러오는 중이에요. 잠깐만 기다려 주세요.", "warn");
+    if (!face.visible) return say("얼굴이 안 보여요. 화면 정면에 앉아 주세요.", "warn");
+    const rows = fixationRows(Math.max(lk.dotAt + CALIB_SETTLE_MS, now - 900), now - 60);
+    if (rows.length < CALIB_MIN_SAMPLES) {
+      ripple(dot.x, dot.y, "miss");
+      return say(now - lk.dotAt < CALIB_SETTLE_MS + 300 ? "점을 잠깐 바라본 다음 맞대 주세요." : "눈이 잘 안 보여요. 점을 보면서 다시 맞대 주세요.", "warn");
+    }
+    const c = CALIB[lk.calibIndex];
+    for (const f of rows) lk.samples.push({ f, u: c.u, v: c.v });
+    ripple(dot.x, dot.y, "ok");
+    lk.calibIndex++;
+    lk.dotAt = now;
+    if (lk.calibIndex < CALIB.length) return;
+    lk.calibIndex = CALIB.length - 1;
+    lk.model = fitGaze(lk.samples);
+    lk.step = "pick";
+    if (gazeError(lk.model, lk.samples) > 0.1) say("눈 설정이 끝났어요. 잘 안 골라지면 ‘이 단계 다시’로 다시 설정해요.", "warn", 4200);
+    else say("눈 설정이 끝났어요!", "ok");
+    return;
+  }
+  const want = LOOK_ORDER[lk.picked.length];
+  if (lk.focus == null) {
+    const g = lookPoint() || p;
+    ripple(g.x, g.y, "miss");
+    return say(byMode("혈흔을 바라봐서 밝아진 다음 맞대 보세요.", "혈흔 위에 마우스를 올린 다음 클릭해 보세요."), "warn");
+  }
+  if (lk.focus !== want) return say(`그 혈흔이 아니에요. ‘혈흔 ${want}’ 쪽을 보세요.`, "warn");
+  const s = LOOK_STAINS.find((t) => t.id === want);
+  // 맞게 고른 순간에도 그 혈흔을 보고 있었으니, 그 눈 모양으로 시선을 조금 더 맞춘다
+  if (lk.model) {
+    const rows = fixationRows(now - 600, now - 60);
+    for (const f of rows) lk.samples.push({ f, u: s.u, v: s.v });
+    if (rows.length) lk.model = fitGaze(lk.samples);
+  }
+  lk.picked.push(want);
+  lk.focus = null;
+  ripple(s.x, s.y, "ok");
+  if (lk.picked.length >= GOAL.look) complete();
+  else say("골랐어요!", "ok");
+}
+
 // ---------- 마우스 입력 ----------
 wall.addEventListener("pointermove", (e) => {
   if (S.mode !== "mouse") return;
@@ -1414,6 +1734,7 @@ function draw(now) {
   switch (S.stage) {
     case "intro": for (const s of CLUSTER_STAINS) drawStain(s); break;
     case "pinch": drawPinchMeter(); break;
+    case "look": drawLookScene(now); break;
     case "cluster": drawCluster(); break;
     case "sticker": drawStickerScene(now); break;
     case "axis": drawAxisScene(); break;
@@ -1748,6 +2069,62 @@ function drawStringScene(now) {
   for (const s of STRING_STAINS) drawChip(`혈흔 ${s.id} · 충돌각 ${s.impact}°`, s.x, s.y - Math.max(s.a, s.b) * 1.1 - 18 * U);
 }
 
+function drawLookScene(now) {
+  const lk = S.lk;
+  if (lk.step === "calib") {
+    const p = lookAt(CALIB[lk.calibIndex].u, CALIB[lk.calibIndex].v);
+    const ready = faceStatus === "ready" && face.visible;
+    const t = ready ? clamp((now - lk.dotAt) / 600, 0, 1) : 0;
+    ctx.save();
+    ctx.globalAlpha = ready ? 1 : 0.45;
+    // 바깥 링이 점으로 모여들어 눈이 점을 따라가게 한다
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, (16 + 26 * (1 - t)) * U, 0, TAU);
+    ctx.lineWidth = 2 * U;
+    ctx.strokeStyle = `rgba(255,255,255,${0.35 + 0.5 * t})`;
+    ctx.stroke();
+    ctx.shadowColor = "rgba(255,255,255,0.9)";
+    ctx.shadowBlur = 14 * U;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 9 * U, 0, TAU);
+    ctx.fillStyle = "#ffffff";
+    ctx.fill();
+    ctx.restore();
+    drawChip(`눈 설정 ${lk.calibIndex + 1} / ${CALIB.length}`, R.x + 16 * U, R.y + 40 * U, "left");
+  } else {
+    const want = LOOK_ORDER[lk.picked.length];
+    for (const s of LOOK_STAINS) {
+      const picked = lk.picked.includes(s.id);
+      if (s.id === want && !S.transitioning) {
+        // 고를 혈흔: 천천히 도는 점선 고리
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(s.x + Math.cos(s.ang) * s.a * 0.35, s.y + Math.sin(s.ang) * s.a * 0.35, s.a * 2.1, 0, TAU);
+        ctx.setLineDash([8 * U, 7 * U]);
+        ctx.lineDashOffset = -now / 60;
+        ctx.lineWidth = 2.5 * U;
+        ctx.strokeStyle = "rgba(255,255,255,0.85)";
+        ctx.stroke();
+        ctx.restore();
+      }
+      drawStain(s, S.hover === s.id, picked);
+      drawChip(picked ? `✓ 혈흔 ${s.id}` : `혈흔 ${s.id}`, s.x, s.y - s.a * 2.2);
+    }
+  }
+  if (S.showGaze && lk.gaze) {
+    const g = lk.gaze;
+    ctx.save();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "rgba(255,214,10,0.95)";
+    ctx.beginPath();
+    ctx.arc(g.x, g.y, 14, 0, TAU);
+    ctx.moveTo(g.x - 22, g.y); ctx.lineTo(g.x + 22, g.y);
+    ctx.moveTo(g.x, g.y - 22); ctx.lineTo(g.x, g.y + 22);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
 function drawPinchMeter() {
   const { x: cx, y: cy } = at(0.5, 0.5);
   const Rm = 92 * U;
@@ -1855,6 +2232,21 @@ function drawCamera() {
       cctx.fill();
     }
   }
+  if (S.stage === "look" && latestFace) {
+    const P = (p) => [ox + p.x * vw * k, oy + p.y * vh * k];
+    for (const e of EYES) {
+      cctx.fillStyle = "rgba(255,255,255,0.8)";
+      for (const i of [e.outer, e.inner, e.top, e.bottom]) {
+        cctx.beginPath();
+        cctx.arc(...P(latestFace[i]), 2.5, 0, TAU);
+        cctx.fill();
+      }
+      cctx.fillStyle = "#86e3a8";
+      cctx.beginPath();
+      cctx.arc(...P(latestFace[e.iris]), 4.5, 0, TAU);
+      cctx.fill();
+    }
+  }
   cctx.restore();
 }
 
@@ -1863,7 +2255,9 @@ function renderStatus() {
   let kind = "", text = "카메라 꺼짐";
   if (S.mode === "mouse") text = "마우스 모드";
   else if (cameraStarting && !cameraReady) { kind = "warn"; text = "준비하는 중…"; }
-  else if (cameraReady && input.visible) { kind = "ok"; text = input.pinching ? "손가락 맞댐" : "손이 보여요"; }
+  else if (S.stage === "look" && faceStatus === "loading") { kind = "warn"; text = "눈 인식 준비 중…"; }
+  else if (S.stage === "look" && faceStatus === "ready" && !face.visible) { kind = "warn"; text = "얼굴이 안 보여요"; }
+  else if (cameraReady && input.visible) { kind = "ok"; text = input.pinching ? "손가락 맞댐" : S.stage === "look" ? "얼굴 · 손이 보여요" : "손이 보여요"; }
   else if (cameraReady) { kind = "warn"; text = "손이 안 보여요"; }
   const key = kind + text;
   if (key === lastStatus) return;
@@ -1882,6 +2276,10 @@ function updateHover() {
     el?.classList.add("hover");
     S.hoverEl = el;
   }
+  if (S.stage === "look") {
+    S.hover = S.lk.step === "pick" && acceptsInput() ? S.lk.focus : null;
+    return;
+  }
   if (!canPoint || el) return;
   if (S.stage === "string") {
     S.hover = handleAt(input)?.id ?? null;
@@ -1895,7 +2293,9 @@ function updateHover() {
 }
 
 function renderPointer() {
-  const show = input.visible && STAGES.includes(S.stage) && S.stage !== "pinch";
+  // 보고 고르기에서는 손 커서 대신 눈으로 가리킨다 (기기처럼 시선 표시는 없다)
+  const byEye = S.stage === "look" && S.mode === "camera" && faceStatus !== "failed";
+  const show = input.visible && STAGES.includes(S.stage) && S.stage !== "pinch" && !byEye;
   cursorEl.hidden = !show;
   if (show) {
     cursorEl.style.transform = `translate(${input.x}px, ${input.y}px)`;
@@ -1908,6 +2308,8 @@ function renderPointer() {
 function frame(now) {
   if (W !== innerWidth || H !== innerHeight) layout();
   if (S.mode === "camera") trackHand(now);
+  if (S.mode === "camera" && S.stage === "look") trackFace(now);
+  if (S.stage === "look") updateLook(now);
   // 다음 사람이 바로 시작할 수 있게, 오래 손이 안 보이면 처음 화면으로
   if (S.mode === "camera" && STAGES.includes(S.stage) && now - S.lastActivity > IDLE_RESET_MS) enterStage("intro");
   updateHover();
@@ -1974,6 +2376,7 @@ addEventListener("keydown", (e) => {
   else if (e.key === "ArrowLeft") go(-1);
   else if (e.key === "r" || e.key === "R") { if (STAGES.includes(S.stage)) enterStage(S.stage); }
   else if (e.key === "Escape") enterStage("intro");
+  else if (e.key === "g" || e.key === "G") S.showGaze = !S.showGaze;
 });
 addEventListener("resize", layout);
 
